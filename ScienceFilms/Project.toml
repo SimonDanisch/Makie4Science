@@ -1,0 +1,25 @@
+name = "ScienceFilms"
+uuid = "635d4445-7ec2-4338-aeb0-0c9890127bf6"
+authors = ["Simon Danisch <sdanisch@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
+Hikari = "afc56b53-c9a9-482a-a956-d1d800e05558"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[weakdeps]
+VideoEditor = "416681b5-7ab7-4a69-a1bd-52421eb96239"
+
+[extensions]
+ScienceFilmsVideoEditorExt = "VideoEditor"
+
+[compat]
+julia = "1.12"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

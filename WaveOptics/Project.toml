@@ -1,0 +1,26 @@
+name = "WaveOptics"
+uuid = "03f4b0a1-f57f-4d10-a67d-2890b242ad62"
+authors = ["Simon Danisch <sdanisch@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
+Hikari = "afc56b53-c9a9-482a-a956-d1d800e05558"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+Mantle = "8f4c1f2e-6a3d-4b71-9c05-2e7d8a1b6f34"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+ScienceFilms = "635d4445-7ec2-4338-aeb0-0c9890127bf6"
+
+[sources]
+ScienceFilms = {path = "../ScienceFilms"}
+
+[compat]
+julia = "1.12"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

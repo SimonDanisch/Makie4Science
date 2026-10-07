@@ -1,0 +1,17 @@
+# Development environment for the monorepo, Makie-style: activate it here and
+# every package below is developed from its folder, so a change to ScienceFilms
+# is visible to every film without a resolve.
+#
+#     julia --project=. -e 'using Pkg; Pkg.instantiate()'
+#
+# Not a package itself: it has no name, uuid or src. A new film or helper
+# package is added to `[deps]` and `[sources]` here.
+[deps]
+ScienceFilms = "635d4445-7ec2-4338-aeb0-0c9890127bf6"
+Telescope = "36c21a29-7204-4f5c-8510-302e9d8b5b18"
+WaveOptics = "03f4b0a1-f57f-4d10-a67d-2890b242ad62"
+
+[sources]
+ScienceFilms = {path = "ScienceFilms"}
+Telescope = {path = "Telescope"}
+WaveOptics = {path = "WaveOptics"}

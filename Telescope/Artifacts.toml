@@ -1,0 +1,15 @@
+[telescope-fields]
+git-tree-sha1 = "c26a2a86d2584573fdf3ee0607f5eb22884c958c"
+lazy = true
+
+    [[telescope-fields.download]]
+    sha256 = "7f572e8c1b693fafd69634a0abc539081a8123af7a08181ec3d999fe669aa24f"
+    url = "https://github.com/SimonDanisch/Makie4Science/releases/download/telescope-v1/telescope-fields.tar.gz"
+
+[telescope-narration]
+git-tree-sha1 = "da5e10861083faf90a1a60d09f0d6c80edb89c26"
+lazy = true
+
+    [[telescope-narration.download]]
+    sha256 = "9575b150ae3e276e2ad3fedb0f37b3e413358af574e01872ecec19429e64b942"
+    url = "https://github.com/SimonDanisch/Makie4Science/releases/download/telescope-v1/telescope-narration.tar.gz"

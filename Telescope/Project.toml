@@ -1,0 +1,27 @@
+name = "Telescope"
+uuid = "36c21a29-7204-4f5c-8510-302e9d8b5b18"
+authors = ["Simon Danisch <sdanisch@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
+Hikari = "afc56b53-c9a9-482a-a956-d1d800e05558"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+ScienceFilms = "635d4445-7ec2-4338-aeb0-0c9890127bf6"
+WaveOptics = "03f4b0a1-f57f-4d10-a67d-2890b242ad62"
+
+[sources]
+ScienceFilms = {path = "../ScienceFilms"}
+WaveOptics = {path = "../WaveOptics"}
+
+[compat]
+julia = "1.12"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
