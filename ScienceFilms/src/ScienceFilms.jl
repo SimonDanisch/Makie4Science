@@ -24,9 +24,9 @@ include("film.jl")
 
 export PALETTE, SUNLIGHT, SECONDARY_LIGHT, MAT
 export Pose, frame3d, flat, look!, studio!, softbox!, Keyframes
-export Key, Timing, Animation, animation, ramp, appear, through, posekeys
-export Callout, Caption, callout, callout!, caption, caption!, viewof
-export Beat, Shot, Film, buildpart, partclip, animate!
-export Inspector, solid!, label!, alike!, materialparams, withparams
+export Key, Timing, Animation, animation, ramp, appear, after, through, switch, constant, retime, posekeys, valueof
+export Callout, Caption, ProjectedLines, callout, callout!, caption, caption!, projectedlines, projectedlines!, viewof, screen_position
+export Beat, Shot, Montage, Film, fit, buildpart, partclip, filmsequence, animate!, showat!
+export Inspector, solid!, label!, alike!, object!, materialparams, withparams
 
 end

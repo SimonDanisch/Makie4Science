@@ -233,6 +233,7 @@ and the camera on its photo tripod at `cam` (turned `γc`).
 """
 struct Instruments
     parts::Parts
+    groups::Vector{Pair{String,UnitRange{Int}}}   # which parts make which object
     camera::Opening
     telescope::Opening
     camera_lens::Point3f       # anchors for the labels
@@ -241,11 +242,15 @@ end
 
 function Instruments(; α = deg2rad(32f0), γt = deg2rad(15f0), cam = Point3f(-700, -700, 0), γc = deg2rad(15f0))
     p = Parts()
+    groups = Pair{String,UnitRange{Int}}[]
+    # what was added since the last group, as the next one
+    group!(name) = push!(groups, name => (isempty(groups) ? 1 : last(groups[end].second) + 1):length(p))
     # the telescope's tripod, the mount head, its pan handle
     H0 = 1040f0
     tripod_legs!(p, Vec3f(0), H0 - 30; splay = deg2rad(22f0), r0 = 62f0, radii = (17f0, 13f0), turn = deg2rad(60f0))
     push!(p, (rod((0, 0, H0 - 45), (0, 0, H0), 80), KIT.body))
     push!(p, (rod((0, 0, 400), (0, 0, 408), 120), KIT.body))                       # accessory tray
+    group!("telescope tripod")
     # the head turns with the telescope about the upright axis
     head = Parts()
     push!(head, (rod((0, 0, H0), (0, 0, H0 + 45), 62), KIT.metal))
@@ -258,10 +263,12 @@ function Instruments(; α = deg2rad(32f0), γt = deg2rad(15f0), cam = Point3f(-7
     push!(head, (rod((40, 60, H0 + 120), (330, 140, H0 - 60), 7), KIT.metal))
     push!(head, (rod((250, 118, H0 - 10), (345, 144, H0 - 70), 11), KIT.rubber))
     append!(p, posed(head, turn_z(γt), Vec3f(0), Vec3f(0)))
+    group!("mount")
     # the telescope on it
     Rt = turn_z(γt) * Mat3f(cos(α), 0, -sin(α), 0, 1, 0, sin(α), 0, cos(α))
     tel, opening = refractor_parts()
     append!(p, posed(tel, Rt, REFRACTOR_PIVOT, pivot))
+    group!("telescope")
     # the camera's tripod: legs, centre column, ball head, plate
     c = Vec3f(cam)
     Hs = 1000f0
@@ -273,11 +280,13 @@ function Instruments(; α = deg2rad(32f0), γt = deg2rad(15f0), cam = Point3f(-7
     push!(p, (ball(c + Vec3f(0, 0, Hs + 222), 24), KIT.metal))
     push!(p, (rod(c + Vec3f(0, 0, Hs + 236), c + Vec3f(0, 0, Hs + 256), 27), KIT.body))
     push!(p, (rounded_box(c + Vec3f(-32, -26, Hs + 255), c + Vec3f(32, 26, Hs + 265), 3), KIT.satin))
+    group!("camera tripod")
     Rc = turn_z(γc)
     camera, aperture = camera_parts()
     seat = c + Vec3f(0, 0, Hs + 265)
     append!(p, posed(camera, Rc, CAMERA_FOOT, seat))
-    return Instruments(p, posed(aperture, Rc, CAMERA_FOOT, seat), posed(opening, Rt, REFRACTOR_PIVOT, pivot),
+    group!("camera")
+    return Instruments(p, groups, posed(aperture, Rc, CAMERA_FOOT, seat), posed(opening, Rt, REFRACTOR_PIVOT, pivot),
                        Point3f(Rc * (Vec3f(-45, 0, 34.3) - Vec3f(CAMERA_FOOT)) + seat),
                        Point3f(Rt * (Vec3f(560, 0, 57.5) - Vec3f(REFRACTOR_PIVOT)) + Vec3f(pivot)))
 end

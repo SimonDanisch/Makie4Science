@@ -77,6 +77,21 @@ function label!(ins::Inspector, label::AbstractString, plot::Makie.AbstractPlot)
 end
 label!(::Nothing, label, plot) = nothing
 
+"""What the editor offers of a drawn line or shape: its colour, fade, width and whether it is shown."""
+const DRAWING = ("color", "alpha", "linewidth", "visible")
+
+"""
+    object!(inspector, label, plots...; attributes = DRAWING) -> inspector
+
+One object of a flat picture (a curve, a grid, an image): `plots` move
+together, the editor offers `attributes` of them. `nothing` collects nothing.
+"""
+function object!(ins::Inspector, label::AbstractString, plots::Makie.AbstractPlot...; attributes = DRAWING)
+    push!(ins.objects, (; label, plots = [p.name[] for p in plots], attributes))
+    return ins
+end
+object!(::Nothing, label, plots...; attributes = DRAWING) = nothing
+
 """A plot name as a label: `lens_cell` reads `Lens cell`."""
 partlabel(name::Symbol) = uppercasefirst(replace(String(name), '_' => ' '))
 

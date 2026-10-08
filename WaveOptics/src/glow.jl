@@ -34,6 +34,23 @@ function sensor_pixels(g::Grid, I::AbstractMatrix, x; pitch = 1f0, halfwidth = 1
     return Float32.(centres), Float32.(vals)
 end
 
+"""
+    sensor_pixels(g, column, x; pitch, halfwidth) -> (centres, values)
+
+The same for a quantity known only along the sensor's column: `column[j]` at
+the height of grid row `j` (see `collected`).
+"""
+function sensor_pixels(g::Grid, column::AbstractVector, x; pitch = 1f0, halfwidth = 12f0)
+    n = floor(Int, 2halfwidth / pitch)
+    centres = [(k - (n + 1) / 2) * pitch for k in 1:n]
+    y = collect(ys(g))
+    vals = map(centres) do c
+        js = findall(v -> abs(v - c) < pitch / 2, y)
+        sum(column[js]) / length(js)
+    end
+    return Float32.(centres), Float32.(vals)
+end
+
 """The largest radius of the parts that are drawn."""
 outer_radius(parts) = maximum(p -> p.r1, filter(p -> p.look !== nothing, parts))
 

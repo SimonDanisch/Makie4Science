@@ -18,15 +18,27 @@ Everything only one film needs stays in that film's folder.
 
 ## A film
 
-A film is a package in its own folder. It defines its parts, each a `Beat`
-(narrated, keyed by when each line is spoken) or a `Shot`, a `Film` value named
-`FILM`, and `part(canvas, args) = buildpart(FILM, canvas, args)`, the scene
-recipe a VideoEditor project names:
+A film is a package in its own folder. It defines its parts: `Beat`s
+(narrated, keyed by when each line is spoken), `Shot`s (animated pictures in
+their own seconds) and `Montage`s (narration shown with shots, fitted to it);
+its cut, the narrated parts in order; a `Film` value named `FILM`; and
+`part(canvas, args) = buildpart(FILM, canvas, args)`, the scene recipe a
+VideoEditor project names. Every part is a scene built once whose motion is
+keys on named plots, the camera and the scene's arguments, so every motion is
+an editable keyframe curve in VideoEditor:
 
 ```julia
-using VideoEditor, Telescope, ScienceFilms
-clip = partclip(Telescope.FILM, "b01_telescope"; frames = 900)
+using VideoEditor, RayMakie, Telescope, ScienceFilms
+seq = filmsequence(Telescope.FILM)                            # the whole film, narration included
+clip = partclip(Telescope.FILM, "b01_telescope"; frames = 900)  # one part
 ```
+
+`Telescope/tools/make_project.jl` writes the whole film as a project
+(`gen/telescope.videoedit`), with the approved narration saved in it, ready
+to preview, edit and render on a farm. `showat!(built, keys, t)` puts a built
+part where its keys have it at `t` without an editor, for stills and checks.
+A film's tests build every part and check that every key names a plot, an
+argument or the camera; the editor skips a key that names nothing.
 
 ## Data
 

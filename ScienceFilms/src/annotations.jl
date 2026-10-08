@@ -57,8 +57,9 @@ function Makie.plot!(p::Callout)
     map!(a -> RGBAf(1, 1, 1, 0.9a), p, :alpha, :linecolor)
     map!(a -> RGBAf(1, 1, 1, a), p, :alpha, :dotcolor)
     map!(d -> [d], p, :dot, :dots)
-    lines!(p, p.leader; color = p.linecolor, linewidth = 2)
-    scatter!(p, p.dots; color = p.dotcolor, markersize = 9)
+    # a recipe's own `visible` does not reach what it draws: passed on
+    lines!(p, p.leader; color = p.linecolor, linewidth = 2, visible = p.visible)
+    scatter!(p, p.dots; color = p.dotcolor, markersize = 9, visible = p.visible)
     label!(p, :labelpos, :text, :alpha, p.align, p.fontsize)
     return p
 end
@@ -76,33 +77,37 @@ function label!(parent, position, text, alpha, align, fontsize)
     map!(t -> [t], parent, text, :label_texts)
     return textlabel!(parent, parent.label_positions; text = parent.label_texts, text_align = align, fontsize,
                       text_color = parent.label_textcolor, background_color = parent.label_background,
-                      strokecolor = parent.label_stroke, strokewidth = 1, padding = (9, 9, 6, 6), cornerradius = 4)
+                      strokecolor = parent.label_stroke, strokewidth = 1, padding = (9, 9, 6, 6), cornerradius = 4,
+                      visible = parent.visible)
 end
 
 """
-    caption(; text, alpha, line, centre, fontsize)
+    caption(position; text, alpha, fontsize, offset)
 
-One statement at the bottom of the frame, as a subtitle sits: centred at
-`centre` (figure pixels), `line` counting up from the bottom for a second line
-above it. `alpha` fades it in and out.
+One statement at the bottom of the frame, as a subtitle sits: centred on
+`position` (figure pixels) at its bottom, moved by `offset`; `alpha` fades
+it in and out. [`captionposition`](@ref) is where a subtitle's line goes.
 """
-@recipe Caption () begin
+@recipe Caption (position,) begin
     "The caption's text."
     text = ""
     "Opacity, 0 (gone) to 1."
     alpha = 1.0
-    "Which line, counting up from the bottom of the frame."
-    line = 0
-    "Horizontal centre in figure pixels."
-    centre = 640
     "Font size in pixels."
     fontsize = 30
+    "How far the caption is moved from its position, in pixels."
+    offset = Vec2f(0)
     Makie.mixin_generic_plot_attributes()...
 end
 
+Makie.convert_arguments(::Type{<:Caption}, p::VecTypes{2}) = (Point2f(p),)
+
+"""Where a caption sits: `line` counting up from the bottom of the frame (a second line above the first), centred at `centre`."""
+captionposition(line, centre, fontsize) = Point2f(centre, 30 + 1.6f0 * fontsize * line)
+
 function Makie.plot!(p::Caption)
-    map!((l, c, f) -> Point2f(c, 30 + 1.6f0 * f * l), p, [:line, :centre, :fontsize], :position)
-    label!(p, :position, :text, :alpha, (:center, :bottom), p.fontsize)
+    map!((q, o) -> q + o, p, [:position, :offset], :labelpos)
+    label!(p, :labelpos, :text, :alpha, (:center, :bottom), p.fontsize)
     return p
 end
 
@@ -114,3 +119,69 @@ The callout attributes that place a label by `scene`'s camera: splat into
 follow the scene, so the label follows a moving camera.
 """
 viewof(scene::Scene) = (projectionview = scene.camera.projectionview, viewport = scene.viewport)
+
+"""
+    projectedlines(points; color, linewidth, alpha, halo, projectionview, viewport)
+
+A line through world `points` of another scene, drawn in a pixel overlay on top
+of it, so nothing in that scene hides it: a ring around an opening, an outline
+marking a part. A darker, wider `halo` under it keeps it readable on light and
+dark. Plot it into the overlay with [`viewof`](@ref) the scene it marks, and it
+follows that scene's (keyed) camera; `alpha` fades it.
+"""
+@recipe ProjectedLines (points,) begin
+    "The line's colour."
+    color = :white
+    "The line's width in pixels."
+    linewidth = 4
+    "Opacity, 0 (gone) to 1."
+    alpha = 1.0
+    "The width of the dark line under it, in pixels; 0 for none."
+    halo = 8
+    "The described scene's `projectionview`, which places the points on screen."
+    projectionview = Mat4f(I)
+    "The described scene's viewport in figure pixels."
+    viewport = Rect2f(0, 0, 1, 1)
+    Makie.mixin_generic_plot_attributes()...
+end
+
+Makie.convert_arguments(::Type{<:ProjectedLines}, ps::AbstractVector{<:VecTypes{3}}) = (Point3f.(ps),)
+
+function Makie.plot!(p::ProjectedLines)
+    map!((pv, vp, ps) -> [screen_position(pv, vp, q) for q in ps], p, [:projectionview, :viewport, :points], :onscreen)
+    map!(a -> 0.5 * a, p, :alpha, :halo_alpha)
+    map!((h, v) -> h > 0 && v, p, [:halo, :visible], :halo_visible)
+    lines!(p, p.onscreen; color = :black, alpha = p.halo_alpha, linewidth = p.halo, visible = p.halo_visible)
+    lines!(p, p.onscreen; color = p.color, alpha = p.alpha, linewidth = p.linewidth, visible = p.visible)
+    return p
+end
+
+# ── labels a film part offers the editor ─────────────────────────────────────
+
+"""
+    callout!(inspector, overlay, scene, name, anchor; text, offset, fontsize, alpha = 0) -> plot
+
+A callout of `scene` named `name` in its `overlay` (see [`callout`](@ref)),
+hidden until its `alpha` is keyed, and offered to the editor as
+`Label · <its text>`. `anchor` may be an `Observable`: a label on something
+that moves.
+"""
+function callout!(ins::Union{Inspector,Nothing}, ov, scene::Scene, name::Symbol, anchor; text, offset,
+                  fontsize = 24, alpha = 0)
+    p = callout!(ov, anchor; text, offset = Vec2f(offset), alpha, fontsize, name, viewof(scene)...)
+    label!(ins, "Label · " * first(split(String(text), '\n')), p)
+    return p
+end
+
+"""
+    caption!(inspector, overlay, name; text, line, centre, fontsize, alpha = 0) -> plot
+
+A caption named `name` (see [`caption`](@ref)), hidden until its `alpha` is
+keyed, and offered to the editor as `Caption · <its text>`.
+"""
+function caption!(ins::Union{Inspector,Nothing}, ov, name::Symbol; text, line = 0, centre = 640, fontsize = 30,
+                  alpha = 0)
+    p = caption!(ov, captionposition(line, centre, fontsize); text, alpha, fontsize, name)
+    label!(ins, "Caption · " * String(text), p)
+    return p
+end

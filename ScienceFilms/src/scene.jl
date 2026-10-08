@@ -40,11 +40,11 @@ function (c::Keyframes)(t)
     return ks[end].second
 end
 
-"""Point a scene's 3D camera at `pose`."""
-function look!(scene, pose::Pose)
+"""Point a scene's 3D camera at `pose`, `up` the camera's up (world z by default)."""
+function look!(scene, pose::Pose; up = Vec3f(0, 0, 1))
     cam = cameracontrols(scene)
     cam.fov[] = pose.fov
-    update_cam!(scene, cam, pose.eye, pose.lookat, Vec3f(0, 0, 1))
+    update_cam!(scene, cam, pose.eye, pose.lookat, Vec3f(up))
     return scene
 end
 
