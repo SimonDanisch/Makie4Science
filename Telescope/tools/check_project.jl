@@ -4,6 +4,8 @@ Check the clips the editor makes of the telescope film against the film as autho
     julia --project=<env with Telescope, VideoEditor and RayMakie> -i Telescope/tools/check_project.jl
     julia> keycoverage()                       # keys the editor cannot store: should be empty
     julia> compareframes("gen/check_project")  # keyed clips against the parts posed by `showat!`
+    julia> offframe()                          # labels the frame's edge cuts: should be empty
+    julia> clashes()                           # labels on top of each other: should be empty
 
 A part's keys on its arguments are stored on the native plot properties that
 consume them; a key that finds no such property is not stored, and its motion
@@ -60,6 +62,69 @@ function keycoverage()
         foreach(b -> Makie.free(b.scene), builts)
     end
     return unstored
+end
+
+"Every top-level plot of `scene` and the scenes below it."
+allplots(scene) = [scene.plots; reduce(vcat, (allplots(c) for c in scene.children); init = Any[])]
+
+"The text of a label drawn on a backing (a callout's or caption's), or `nothing` for any other plot."
+labeltext(p::Union{SF.Callout, SF.Caption}) = only(q for q in only(q for q in p.plots if q isa Makie.TextLabel).plots
+                                                    if q isa Makie.Text)
+labeltext(_) = nothing
+
+"""
+    offframe(; step = 0.5) -> Vector{(part, t, label, lo, hi)}
+
+Every callout or caption of every part that shows (faded in more than 5 %) at
+least partly outside the frame, `step` seconds apart: its backing's corners in
+layout pixels. A label wholly outside is not seen; one cut by the edge is.
+"""
+function offframe(; step = 0.5)
+    found = NamedTuple[]
+    shownlabels(; step) do name, t, boxes
+        for (label, lo, hi) in boxes
+            seen = all(hi .> 0) && all(lo .< Vec2f(LAYOUT))
+            inside = all(lo .>= -1) && all(hi .<= Vec2f(LAYOUT) .+ 1)
+            seen && !inside && push!(found, (part = name, t, label, lo, hi))
+        end
+    end
+    return found
+end
+
+"Each part's shown labels (callouts and captions faded in more than 5 %) every `step` seconds, as `(part, t, boxes)`, a box `(name, lo, hi)` in layout pixels with its backing."
+function shownlabels(f; step = 0.5)
+    data = FILM.data()
+    for name in editorparts()
+        part = FILM.parts[name]
+        built = part.build(data; size = LAYOUT)
+        anim = authored(part, FILM, data)
+        labels = [(p, t) for p in allplots(built.scene) for t in (labeltext(p),) if t !== nothing]
+        for t in 0:step:seconds(part)
+            showat!(built, anim, Float32(t))
+            boxes = [(p.name[], Vec2f(minimum(b)) .- Vec2f(9, 6), Vec2f(maximum(b)) .+ Vec2f(9, 6))
+                     for (p, text) in labels if p.alpha[] > 0.05 && p.visible[] for b in (Makie.boundingbox(text, :pixel),)]
+            f(name, t, boxes)
+        end
+        Makie.free(built.scene)
+    end
+end
+
+"""
+    clashes(; step = 0.5, least = 1.0) -> Vector{(part, a, b, from, to)}
+
+Every two labels of a part that overlap on screen for at least `least` seconds
+(a caption fading out where the next fades in overlaps for less).
+"""
+function clashes(; step = 0.5, least = 1.0)
+    times = Dict{Tuple{String, Symbol, Symbol}, Vector{Float64}}()
+    shownlabels(; step) do name, t, boxes
+        for i in eachindex(boxes), j in i+1:length(boxes)
+            (a, alo, ahi), (b, blo, bhi) = boxes[i], boxes[j]
+            all(alo .< bhi) && all(blo .< ahi) && push!(get!(times, (name, a, b), Float64[]), t)
+        end
+    end
+    return [(part = k[1], a = k[2], b = k[3], from = minimum(ts), to = maximum(ts))
+            for (k, ts) in times if step * length(ts) >= least]
 end
 
 "A rasterized clip of the editor at the film's canvas."

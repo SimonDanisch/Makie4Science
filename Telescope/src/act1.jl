@@ -248,7 +248,10 @@ function keys_refraction(d::TelescopeData, tm::Timing)
         "face.alpha" => 0.8f0 * appear(tm, 2), "rays.alpha" => appear(tm, 5),
         "label_air.alpha" => appear(tm, 2), "label_glass.alpha" => appear(tm, 2),
         "label_slower.alpha" => appear(tm, 2; delay = 1.5f0) * (1f0 - appear(tm, 3)),
-        "label_enters.alpha" => appear(tm, 4) * trace, "label_air_end.alpha" => appear(tm, 4; delay = 1.5f0) * trace,
+        # line 4's two ends, gone when line 5 turns to the new direction (its label would sit on theirs); the
+        # air end's label rides in from the left edge with its crest, shown once it is in the frame
+        "label_enters.alpha" => appear(tm, 4) * (1f0 - appear(tm, 5)),
+        "label_air_end.alpha" => appear(tm, 4; delay = 3f0) * (1f0 - appear(tm, 5)),
         "label_direction.alpha" => appear(tm, 5), "caption_text.alpha" => appear(tm, 6)))
 end
 
@@ -332,8 +335,11 @@ function keys_arrival(d::TelescopeData, tm::Timing)
                   s[3] => Pose((-2, -12, 10), (6, 0, -0.5)), s[4] => Pose((5, -9, 7), (10.5, 0, -0.5))]),
         Dict("args.time" => clock, "args.lens" => 0.4f0 + 0.6f0 * appear(tm, 2),
              "args.raysin" => appear(tm, 1; delay = 1f0), "args.raysout" => appear(tm, 3),
-             "label_flat.alpha" => appear(tm, 1), "label_glass.alpha" => appear(tm, 2),
-             "label_behind.alpha" => appear(tm, 2; delay = 2.5f0), "label_curved.alpha" => appear(tm, 3),
+             # the steps before the curved wave leave as the camera moves on, before the frame's edge cuts them
+             "label_flat.alpha" => appear(tm, 1) * (1f0 - appear(tm, 3; delay = 1f0)),
+             "label_glass.alpha" => appear(tm, 2) * (1f0 - appear(tm, 3; delay = 1f0)),
+             "label_behind.alpha" => appear(tm, 2; delay = 2.5f0) * (1f0 - appear(tm, 3; delay = 1f0)),
+             "label_curved.alpha" => appear(tm, 3),
              "label_focus.alpha" => appear(tm, 4)))
 end
 
@@ -570,7 +576,8 @@ end
 keys_opening(d::TelescopeData, tm::Timing) = animation(Dict(
     "args.phase" => ramp(0, tm.duration, 0, 1.5f0 * tm.duration), "args.paths" => appear(tm, 2),
     "args.highlight" => switch(tm.starts[2], false, true),
-    "label_narrow.alpha" => appear(tm, 1), "label_wide.alpha" => appear(tm, 1; delay = 1.5f0),
+    # the wide lens's name gives way to its far edge's label, which takes its place below it
+    "label_narrow.alpha" => appear(tm, 1), "label_wide.alpha" => appear(tm, 1; delay = 1.5f0) * (1f0 - appear(tm, 4)),
     "label_pixel.alpha" => appear(tm, 2), "label_narrow_edge.alpha" => appear(tm, 3),
     "label_wide_edge.alpha" => appear(tm, 4), "caption_text.alpha" => appear(tm, 5)))
 
@@ -602,7 +609,8 @@ function build_colours(d::TelescopeData; size = (1280, 720))
     callout!(ins, ov, sc, :label_red, Point3f(W * -8, down[2] - W * 8, 0); text = "red light: longer waves",
              offset = (-20, -70))
     callout!(ins, ov, sc, :label_small, tip(up); text = "small spot", offset = (30, 60))
-    callout!(ins, ov, sc, :label_bigger, tip(down); text = "bigger spot", offset = (30, -60))
+    # above its bars: below them the caption runs
+    callout!(ins, ov, sc, :label_bigger, tip(down); text = "bigger spot", offset = (30, 60))
     caption!(ins, ov, :caption_length; line = 1, text = "No wavelength, no blur: the wavelength sets the size of the spot")
     caption!(ins, ov, :caption_radio; text = "Radio waves are ~400 000× longer than light: radio telescopes are giant dishes")
     return (scene = fig.scene, args = (; phase), objects = ins.objects)
@@ -614,7 +622,9 @@ function keys_colours(d::TelescopeData, tm::Timing)
         posekeys([0 => Pose((-1, -14, 11), (4, 0, -0.8)), s3 => Pose((-1, -14, 11), (4, 0, -0.8)),
                   s3 + 3 => Pose((9.5, -8, 7), (12, 0, -0.3))]),
         Dict("args.phase" => ramp(0, tm.duration, 0, 1.5f0 * tm.duration),
-             "label_blue.alpha" => appear(tm, 1), "label_red.alpha" => appear(tm, 1; delay = 1.5f0),
+             # the colours' labels leave as the camera moves to the spots, which line 4 labels
+             "label_blue.alpha" => appear(tm, 1) * (1f0 - appear(tm, 3)),
+             "label_red.alpha" => appear(tm, 1; delay = 1.5f0) * (1f0 - appear(tm, 3)),
              "label_small.alpha" => appear(tm, 4), "label_bigger.alpha" => appear(tm, 4; delay = 1f0),
              "caption_length.alpha" => appear(tm, 5), "caption_radio.alpha" => appear(tm, 6)))
 end

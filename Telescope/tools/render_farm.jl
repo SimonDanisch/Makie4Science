@@ -1,7 +1,7 @@
 """
 Render the film's project on the LAN farm and export it.
 
-    julia --project=<Science4Makie root> Telescope/tools/render_farm.jl <project> <job directory> <output.mp4> <machines>
+    julia --project=<Science4Makie root> Telescope/tools/render_farm.jl <project> <job directory> <output.mp4> <machine>...
 
 The job is a snapshot of the project (`VideoEditor.renderjob`, `portable = false`:
 each developed package pinned by its code). Every machine offers its GPUs with a
@@ -10,32 +10,38 @@ farm client in its own application root, which must hold the same code:
     VIDEOEDITOR_FARM_PROJECT=<root> julia --project=<root> -e 'include("<VideoEditor>/FarmClient/src/FarmClient.jl");
         FarmClient.serve(FarmClient.Client(ARGS[1], ARGS[2]))' <gpus> <this host>:7600
 
-Once `machines` clients are connected, the farm renders every distinct traced
-picture once; the project adopts the frames' planes and the editor's own export
-composes the film with its narration. Run again to resume: the same project
-resumes its job, keeping every committed frame.
+Once a client of every named machine is connected (as the farm server names
+them: its host, with its address where hosts share a name), the farm renders on
+those alone, every distinct traced picture once; the project adopts the frames' planes and the editor's own export
+composes the film with its narration. Run again to resume the job in
+`job directory`, keeping every committed frame; a changed edit needs a new one. `main(...; frames)` renders
+only those timeline frames (a sample before the whole film) and exports nothing.
 """
 
 using VideoEditor, RayMakie, Telescope
 import VideoEditor as VE
 
-function main(project, jobdir, output, machines; timeout = 3600)
+function main(project, jobdir, output, machines::AbstractVector{<:AbstractString}; frames = nothing, timeout = 3600)
     VE.usebackend!(RayMakie)
-    job = VE.renderjob(project, jobdir; portable = false)
+    # Made once: the project then also holds the frames adopted from it, which
+    # are not part of the edit the job renders.
+    job = isfile(joinpath(jobdir, "job", "job.toml")) ? VE.RenderJob(jobdir) : VE.renderjob(project, jobdir; portable = false)
     delivery = VE.loadproject(project)
-    server = VE.farmserver()
+    server = VE.FarmServer()   # its own, closed when done (`farmserver()` is the session's)
     try
+        connected() = [m.name for m in VE.farmmachines(server)]
         waited = 0
-        while length(VE.farmmachines(server)) < machines
-            waited < timeout || error("only $(length(VE.farmmachines(server))) of $machines farm clients connected")
+        while !issubset(machines, connected())
+            waited < timeout || error("farm clients missing: $(join(setdiff(machines, connected()), ", "))")
             sleep(5)
             waited += 5
         end
-        println("MACHINES ", join((m.name for m in VE.farmmachines(server)), ", "))
+        others = setdiff(connected(), machines)
+        println("MACHINES ", join(machines, ", "), isempty(others) ? "" : "; left out: " * join(others, ", "))
         flush(stdout)
-        status = VE.renderfarm!(job, VE.farmworkers(job, server); reuse = delivery,
+        status = VE.renderfarm!(job, VE.farmworkers(job, server; exclude = others); reuse = delivery, frames,
                                 progress = (done, total) -> (println("FARM $done/$total"); flush(stdout)))
-        (status["paused"] || status["completed"] < status["total"]) && return status
+        (frames !== nothing || status["paused"] || status["completed"] < status["total"]) && return status
     finally
         VE.adoptfarmcache!(delivery, job)
         VE.saveproject(project, delivery; checkpoint = false)
@@ -47,4 +53,6 @@ function main(project, jobdir, output, machines; timeout = 3600)
     return output
 end
 
-main(ARGS[1:3]..., parse(Int, ARGS[4]))
+if abspath(PROGRAM_FILE) == @__FILE__
+    main(ARGS[1:3]..., ARGS[4:end])
+end

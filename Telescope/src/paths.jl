@@ -241,8 +241,9 @@ function build_dark(d::TelescopeData; size = (1280, 720))
     y1 = dark_height(a)
     dist = [delay(p.wl, s, Point2f(a.xf, y1)) for s in p.wl.src]
     for (k, (s, dk)) in enumerate(zip(p.wl.src, dist))
+        # every other one set farther out: the points are closer than a label is tall
         callout!(p.ins, p.ov, p.sc, Symbol(:label_point, k), w3(s[1], s[2]); text = fraction(dk - minimum(dist)),
-                 offset = (-34, 0))
+                 offset = (isodd(k) ? -34 : -84, 0))
     end
     callout!(p.ins, p.ov, p.sc, :label_farther, w3(a.xexit, 15);
              text = "how much farther from this pixel (wavelengths)", offset = (20, 170))
