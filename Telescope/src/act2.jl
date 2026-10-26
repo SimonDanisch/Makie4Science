@@ -26,7 +26,7 @@ function build_window_again(d::TelescopeData; size = (1280, 720))
         material = lift((t, s, l) -> window_pair_light(w, sources, t, 0.35f0 * s, l), time, shown, lit)
         plane = mesh!(sc, sheet(Rect2f(minimum(b) + Vec2f(off[1], off[2]), widths(b)), 0.01f0); material, visible,
                       name = Symbol(:plane_, key), inspectable = false)
-        solid!(ins, "Light · $key", plane; materials = false)
+        solid!(ins, "Light · $key", plane)
         frame = window_frame!(sc, Rect2f(minimum(w.window) + Vec2f(off[1], off[2]), widths(w.window));
                               name = Symbol(:frame_, key), visible)
         solid!(ins, "Window · $key", frame)
@@ -47,7 +47,7 @@ function build_window_again(d::TelescopeData; size = (1280, 720))
     caption!(ins, ov, :caption_edges; text = "A wide picture also needs sharp edges")
     args = (; time, stars_shown = fades.stars[1], stars_lit = fades.stars[2], scene_shown = fades.scene[1],
             scene_lit = fades.scene[2])
-    return (scene = fig.scene, args, objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args, objects = ins.objects)
 end
 
 keys_window_again(d::TelescopeData, tm::Timing) = animation(Dict(
@@ -120,7 +120,7 @@ function build_fans(d::LensDemo; pose, scale = 2f0, size = (1280, 720))
     return (; fig, sc, ov, ins, args = (; second, rays...))
 end
 
-fans_part(p) = (scene = p.fig.scene, args = p.args, objects = p.ins.objects, controls = p.ins.controls)
+fans_part(p) = (scene = p.fig.scene, args = p.args, objects = p.ins.objects)
 
 function build_lenses(d::TelescopeData; size = (1280, 720))
     l = d.lenses
@@ -233,10 +233,10 @@ function build_zoom(d::TelescopeData; size = (1280, 720))
             band!(ax, lift(pts -> [Point2f(p[1], 0) for p in pts], curve), curve; color = rgba(FIELD_COLORS[3], 0.35),
                   name = :area),
             lines!(ax, curve; color = rgbf(FIELD_COLORS[3]), linewidth = 3, name = :curve))
-    ov = Scene(fig.scene; camera = campixel!, clear = false)
+    ov = overlay(fig)
     caption!(ins, ov, :caption_lenses; text = "Three lenses, light from 15° to the side")
     caption!(ins, ov, :caption_pixel; text = "Each stripe: one pixel")
-    return (scene = fig.scene, args = (; zoom), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; zoom), objects = ins.objects)
 end
 
 keys_zoom(d::TelescopeData, tm::Timing) = animation(Dict(
@@ -300,9 +300,9 @@ function build_limits(d::TelescopeData; size = (1280, 720))
         words!(ins, ax, Symbol(:arrow, r, :_2), (3.0, y0 + 0.55f0), "→"; fontsize = 40, align = (:center, :center))
         words!(ins, ax, Symbol(:verdict, r), (4.5, y0 + 0.55f0), verdict; fontsize = 32, align = (:left, :center))
     end
-    ov = Scene(fig.scene; camera = campixel!, clear = false)
+    ov = overlay(fig)
     caption!(ins, ov, :caption; text = "Same pixel size in every picture", fontsize = 22)
-    return (scene = fig.scene, args = (;), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (;), objects = ins.objects)
 end
 
 function keys_limits(d::TelescopeData, tm::Timing)

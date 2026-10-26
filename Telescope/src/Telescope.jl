@@ -6,7 +6,7 @@ narration, both Pkg artifacts on this repository's `telescope-v1` release
 (`tools/make_artifacts.jl` builds them). Its parts are scenes built from that
 data with WaveOptics and ScienceFilms; `FILM` is what VideoEditor assembles:
 `ScienceFilms.filmsequence(Telescope.FILM)` is the whole film,
-`ScienceFilms.partclip(Telescope.FILM, name; ...)` one part of it.
+`ScienceFilms.partclips(Telescope.FILM, name; ...)` one part of it.
 """
 module Telescope
 
@@ -26,9 +26,9 @@ using WaveOptics: device, AiryProfile, CameraLens, Continuous, DARK, FarSource, 
                   singlet_camera, slip, smoothstep, spot_pixel_tiles, star_glow, star_on_pixels, steady,
                   telescope_meshes, toimage, truncate_path, w3, wave_material, window_glow, xs, ys, zoom_plot!
 using ScienceFilms: Beat, Film, Montage, PALETTE, Pose, SECONDARY_LIGHT, SUNLIGHT, Shot, Timing, Key, animation,
-                    appear, after, through, switch, constant, ramp, ease, frame3d, flat, look!, posekeys, studio!,
+                    appear, after, through, switch, constant, ramp, ease, frame3d, flat, overlay, look!, posekeys, studio!,
                     softbox!, buildpart, callout!, caption!, projectedlines!, viewof, screen_position, Inspector,
-                    solid!, label!, alike!, object!, partlabel
+                    solid!, label!, object!, partlabel
 
 include("data.jl")
 include("common.jl")

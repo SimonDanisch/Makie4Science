@@ -1,2 +1,5 @@
 gen/
 Manifest.toml
+# talks and slides stay out of this public repository
+*.pptx
+*.key

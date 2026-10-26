@@ -164,7 +164,7 @@ function build_paths(d::TelescopeData; layouts, size = (1280, 720))
     cam3d!(sc; center = false)
     telescope!(sc, a.tel, a.g, lift(light, args.phase, args.y, args.paths); inspector = ins)
     look!(sc, Pose((5.6, -0.8, 19), (5.6, 0, 0); fov = 40))
-    ov = Scene(fig.scene; camera = campixel!, clear = false)
+    ov = overlay(fig)
     straighten!(ov, sc, shown, wl, args)
     # captions under the cutaway they describe, clear of the panel's axis label
     vp = viewport(sc)[]
@@ -173,7 +173,7 @@ function build_paths(d::TelescopeData; layouts, size = (1280, 720))
 end
 
 """The paths beats' result as the editor takes it."""
-paths_part(p, ins) = (scene = p.fig.scene, args = p.args, objects = ins.objects, controls = ins.controls)
+paths_part(p, ins) = (scene = p.fig.scene, args = p.args, objects = ins.objects)
 
 """A paths beat's pixel, as a callout anchor following `args.y`."""
 pixel_anchor(a::Act, args) = lift(y -> w3(a.xf, y), args.y)

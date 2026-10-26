@@ -59,14 +59,16 @@ function frame3d(pose::Pose; size = (1280, 720), lights = [AmbientLight(RGBf(0.0
     ls = LScene(fig[1, 1]; show_axis = false, scenekw = (lights = lights, backgroundcolor = :black))
     cam3d!(ls.scene; center = false)
     look!(ls.scene, pose)
-    ov = Scene(fig.scene; camera = campixel!, clear = false)
-    return fig, ls.scene, ov
+    return fig, ls.scene, overlay(fig)
 end
+
+"""A pixel-space scene drawn over all of `fig`, for labels, captions and drawings on top."""
+overlay(fig) = Scene(fig.scene; camera = campixel!, clear = false)
 
 """A flat 2D figure with an overlay for captions."""
 function flat(; size = (1280, 720), padding = (40, 40, 100, 30))
     fig = Figure(; size, backgroundcolor = :black, figure_padding = padding, fontsize = 22)
-    return fig, Scene(fig.scene; camera = campixel!, clear = false)
+    return fig, overlay(fig)
 end
 
 """
@@ -93,10 +95,10 @@ end
 """
 A softly warm sand-coloured studio, with mostly neutral reflections on glass.
 `scale` grows the lights' layout for bigger subjects, centred at `height`.
-The floor and the three softboxes are named `studio_floor`, `softbox_key`,
-`softbox_fill` and `softbox_side`, and offered to the editor through
-`inspector` (see [`Inspector`](@ref)): each with its material, a softbox's being
-its light.
+The floor, the three softboxes and the two strip lights are named
+`studio_floor`, `softbox_key`, `softbox_fill`, `softbox_side`,
+`softbox_strip_high` and `softbox_strip_low`, and offered to the editor through
+`inspector` (see [`Inspector`](@ref)).
 """
 function studio!(scene, xmid; floor = -3.5f0, scale = 1f0, height = 0f0, inspector = nothing)
     scene.backgroundcolor[] = RGBf(0.70, 0.66, 0.60)
@@ -116,5 +118,14 @@ function studio!(scene, xmid; floor = -3.5f0, scale = 1f0, height = 0f0, inspect
     solid!(inspector, "Softbox · key", keybox)
     solid!(inspector, "Softbox · fill", fillbox)
     solid!(inspector, "Softbox · side", sidebox)
+    # Two long strip lights for the glass: high on the far side, mirrored in the
+    # cut faces seen from above; low at the front left, running along curved
+    # lens surfaces and edges as thin highlights.
+    high = softbox!(scene, centre + scale * Vec3f(2, 24, 15), 44scale, 1.6scale; Le = (26, 25, 23.5), target,
+                    name = :softbox_strip_high)
+    low = softbox!(scene, centre + scale * Vec3f(-22, -18, 5), 34scale, 1.2scale; Le = (22, 22, 23), target,
+                   name = :softbox_strip_low)
+    solid!(inspector, "Strip light · high", high)
+    solid!(inspector, "Strip light · low", low)
     return scene
 end

@@ -5,8 +5,9 @@
     Beat(name, lines, build, keys)
 
 A narrated part: `lines` are the narration, one spoken line each. `build(data;
-size)` makes its scene once and returns `(scene = ..., args = ...)`;
-`keys(data, timing)` its animation, from when each line is spoken.
+size)` makes its scene once and returns `(scene = ..., args = ..., objects = ...)`,
+`args` the Observables its keys name; `keys(data, timing)` its animation, from
+when each line is spoken.
 """
 struct Beat
     name::String
@@ -82,31 +83,23 @@ end
     buildpart(film, canvas, args) -> NamedTuple
 
 Part `args["part"]` of `film`, built at `canvas`: what a film's `part` recipe
-returns to the editor.
+returns to the editor, its scene and inspector groups, its keyed arguments
+bound to the native plot properties that consume them. `args["layer"]`, if
+given, keeps only the `"picture"` or the `"labels"` of a part with a 3D view.
+Defined when VideoEditor is loaded.
 """
-function buildpart(film::Film, canvas, args)
-    p = film.parts[args["part"]]
-    return p.build(film.data(); size = Tuple(canvas))
-end
+function buildpart end
 
 """
-    animate!(clip, animation; fps) -> clip
+    partclips(film, name; frames, src_in, speed, canvas, layout, fps, spp, max_depth, timing) -> clips
 
-Write an `Animation` as a VideoEditor clip's keyframes. Defined when
-VideoEditor is loaded.
+The VideoEditor clips of part `name` of `film`, with its keys: a traced part's
+picture and labels, a flat one as one clip. Defined when VideoEditor is loaded.
 """
-function animate! end
-
-"""
-    partclip(film, name; frames, src_in, rate, canvas, fps, spp, timing) -> clip
-
-A VideoEditor clip of part `name` of `film`, with its keys. Defined when
-VideoEditor is loaded.
-"""
-function partclip end
+function partclips end
 
 """
-    filmsequence(film; canvas, fps, spp) -> VideoEditor sequence
+    filmsequence(film; canvas, layout, fps, spp, max_depth) -> VideoEditor sequence
 
 The whole film as one VideoEditor sequence: every part of `film.cut` in order,
 as clips with their keys, and its narration laid under them. Defined when
@@ -130,7 +123,8 @@ function showat!(built, anim::Animation, t)
         if head == "camera"
             camera[rest] = v
         elseif head == "args"
-            setarg!(built.args, split(rest, '.'), v)
+            arg = getproperty(built.args, Symbol(rest))
+            arg[] = convert(eltype(arg), v)
         else
             plot = findplot(built.scene, Symbol(head))
             plot === nothing && error("no plot named $head in the part's scene")
@@ -145,19 +139,6 @@ function showat!(built, anim::Animation, t)
                           get(camera, "fov", cam.fov[])); up = get(camera, "up", cam.upvector[]))
     end
     return built
-end
-
-"""Set the argument at `fields` of `args` (a field of a struct an Observable holds is replaced, the struct rebuilt)."""
-function setarg!(args, fields, v)
-    obs = getproperty(args, Symbol(fields[1]))
-    obs[] = withfield(obs[], fields[2:end], v)
-    return obs
-end
-function withfield(old, fields::AbstractVector, v)
-    isempty(fields) && return old isa Real ? convert(typeof(old), v) : v
-    f = Symbol(fields[1])
-    T = typeof(old)
-    return T((n == f ? withfield(getfield(old, n), fields[2:end], v) : getfield(old, n) for n in fieldnames(T))...)
 end
 
 """The top-level plot named `name` in `scene` or any scene below it, or `nothing`."""

@@ -43,10 +43,12 @@ function cutaway!(scene, meshes, g::Grid, tex::Observable, xmid; S = W, scale = 
                                 name = Symbol(name, "_", part.name), visible)
              for part in meshes]
     title = partlabel(name)
+    # A part's own meshes (`tube_inside`, `lens_1_cut`, `lens_1_rim`, …) are one object with it.
+    belongs(n, part) = n !== part && startswith(String(n), String(part) * "_")
     for (part, plot) in plots
-        endswith(String(part), "_inside") && continue
-        inside = [p for (n, p) in plots if n === Symbol(part, :_inside)]
-        solid!(inspector, string(title, " · ", lowercase(partlabel(part))), plot, inside...)
+        any(belongs(part, other) for (other, _) in plots) && continue
+        own = [p for (n, p) in plots if belongs(n, part)]
+        solid!(inspector, string(title, " · ", lowercase(partlabel(part))), plot, own...)
     end
     studio && studio!(scene, offset[1] + S * xmid; floor = studio_floor(meshes, S, offset), inspector)
     b = bounds(g)

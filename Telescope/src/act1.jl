@@ -40,7 +40,7 @@ function build_wave(d::TelescopeData; size = (1280, 720))
     rowsize!(fig.layout, 2, Relative(0.3))
     caption!(ins, ov, :caption_moving; text = "The wave travels forward →", line = 1)
     caption!(ins, ov, :caption_scale; text = "Wavelength enlarged for visibility")
-    return (scene = fig.scene, args = (; phase, shown), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; phase, shown), objects = ins.objects)
 end
 
 function keys_wave(d::TelescopeData, tm::Timing)
@@ -66,12 +66,6 @@ beat_wave() = Beat("b00_wave", [
 
 # ── B1: the telescope, cut open ──────────────────────────────────────────────
 
-"""What a cut through an instrument shows besides its light: its lens and its outline, each faded in."""
-struct CutLayers
-    lens::Float32
-    outline::Float32
-end
-
 """
 The cut's glow, as layers painted once: the dark base, and the lens and the
 outline at full strength, in the image layout the sheet's texture takes
@@ -91,12 +85,12 @@ function CutTexture(a::Act)
                       toimage(light_up!(unlit(), a.outline, (0.15f0, 0.45f0, 0.22f0), 1f0)))
 end
 
-"The cut's glow with its lens and outline faded to `c`."
-function (t::CutTexture)(c::CutLayers)
+"The cut's glow with its lens faded to `lens` and its outline to `outline`."
+function (t::CutTexture)(lens, outline)
     return map(t.base, t.lens, t.outline) do b, l, o
-        Hikari.RGBSpectrum(b.c[1] + c.lens * l.c[1] + c.outline * o.c[1],
-                           b.c[2] + c.lens * l.c[2] + c.outline * o.c[2],
-                           b.c[3] + c.lens * l.c[3] + c.outline * o.c[3], 1f0)
+        Hikari.RGBSpectrum(b.c[1] + lens * l.c[1] + outline * o.c[1],
+                           b.c[2] + lens * l.c[2] + outline * o.c[2],
+                           b.c[3] + lens * l.c[3] + outline * o.c[3], 1f0)
     end
 end
 
@@ -104,13 +98,13 @@ function build_telescope(d::TelescopeData; size = (1280, 720))
     a = d.act
     fig, sc, ov = frame3d(Pose((-3, -13, 2.5), (6, 0, 0)); size)
     ins = Inspector()
-    cut = Observable(CutLayers(0f0, 0f0))
+    # what the cut shows besides its light, each faded in: its lens and its outline
+    cut_lens, cut_outline = Observable(0f0), Observable(0f0)
     lid = Observable(0f0)
-    tex = lift(CutTexture(a), cut)
+    tex = lift(CutTexture(a), cut_lens, cut_outline)
     cutaway!(sc, telescope_meshes(a.tel), a.g, tex, a.tel.sys.sensor / 2; name = :telescope, inspector = ins,
              imagelayout = true)
-    # the top half, lifted off along the cut and away; one object, its parts
-    # taking the materials of the bottom half's
+    # the top half, lifted off along the cut and away, as one object
     shown = lift(l -> l < 13.9f0, lid)
     lidparts = [part.name => mesh!(sc, place(part.mesh, W); material = part.material,
                                    name = Symbol(:lid_, part.name), visible = shown)
@@ -118,13 +112,12 @@ function build_telescope(d::TelescopeData; size = (1280, 720))
     for (_, p) in lidparts
         on(l -> translate!(p, Vec3f(0, 0.25f0 * l, l)), lid; update = true)
     end
-    solid!(ins, "Telescope · lid", last.(lidparts)...; materials = false)
-    alike!(ins, (Symbol(:telescope_, name) => p for (name, p) in lidparts)...)
+    solid!(ins, "Telescope · lid", last.(lidparts)...)
     callout!(ins, ov, sc, :label_lens, w3(1, 12); text = "lens (glass)", offset = (-80, 120))
     callout!(ins, ov, sc, :label_tube, w3(60, 17); text = "tube, black inside", offset = (40, 120))
     callout!(ins, ov, sc, :label_sensor, w3(a.xf, 6); text = "camera sensor", offset = (40, 80))
     callout!(ins, ov, sc, :label_cut, w3(40, -8); text = "we draw the light on this cut", offset = (60, -90))
-    return (scene = fig.scene, args = (; cut, lid), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; cut_lens, cut_outline, lid), objects = ins.objects)
 end
 
 function keys_telescope(d::TelescopeData, tm::Timing)
@@ -133,7 +126,7 @@ function keys_telescope(d::TelescopeData, tm::Timing)
         posekeys([0 => Pose((-3, -13, 2.5), (6, 0, 0)), t2 => Pose((-4, -12, 5), (5, 0, -0.3)),
                   t2 + 4 => Pose((-6, -10, 7), (2, 0, -0.5))]),
         Dict("args.lid" => ramp(t2, t2 + 3.5f0, 0, 14; ease = :smooth),
-             "args.cut.lens" => appear(tm, 3), "args.cut.outline" => appear(tm, 6),
+             "args.cut_lens" => appear(tm, 3), "args.cut_outline" => appear(tm, 6),
              "label_lens.alpha" => appear(tm, 3), "label_tube.alpha" => appear(tm, 4),
              "label_sensor.alpha" => appear(tm, 5), "label_cut.alpha" => appear(tm, 6)))
 end
@@ -220,7 +213,7 @@ function build_refraction(d::TelescopeData; size = (1280, 720))
     end
     object!(ins, "Rays", arrows2d!(ax, starts, arrows; color = :white, shaftwidth = 3, tipwidth = 14, tiplength = 14,
                                    alpha = 0, name = :rays))
-    ov = Scene(fig.scene; camera = campixel!, clear = false)
+    ov = overlay(fig)
     crestat = lift((φ, k) -> traced_crest(r, φ, k), phase, crest)
     # in the glass the crest runs across the new direction, from where it meets the face
     across = Vec2f(dir[2], -dir[1])
@@ -240,7 +233,7 @@ function build_refraction(d::TelescopeData; size = (1280, 720))
     callout!(ins, ov, ax.scene, :label_direction, Point3f(s.x0 + 16f0 * dir[1], 16f0 * dir[2], 0);
              text = "new direction", offset = (40, -50))
     caption!(ins, ov, :caption; text = "Refraction: light bends because it slows down")
-    return (scene = fig.scene, args = (; phase, glass, trace, crest), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; phase, glass, trace, crest), objects = ins.objects)
 end
 
 function keys_refraction(d::TelescopeData, tm::Timing)
@@ -327,7 +320,7 @@ function build_arrival(d::TelescopeData; size = (1280, 720))
     callout!(ins, ov, sc, :label_behind, w3(a.xexit + 8, 0); text = "the middle falls behind", offset = (40, -110))
     callout!(ins, ov, sc, :label_curved, w3(55, 6); text = "now curved: heading inward", offset = (40, 110))
     callout!(ins, ov, sc, :label_focus, w3(a.xf, 0); text = "focus, on the sensor", offset = (30, -90))
-    return (scene = fig.scene, args = (; time, lens, raysin, raysout), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; time, lens, raysin, raysout), objects = ins.objects)
 end
 
 function keys_arrival(d::TelescopeData, tm::Timing)
@@ -375,7 +368,7 @@ function build_spot(d::TelescopeData; size = (1280, 720))
     callout!(ins, ov, sc, :label_gap, tip(4.5f0); text = "dark gap", offset = (60, 40))
     callout!(ins, ov, sc, :label_bumps, tip(6.5f0); text = "faint bumps", offset = (60, 80))
     caption!(ins, ov, :caption; text = "Not a point: a small spot")
-    return (scene = fig.scene, args = (; phase), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; phase), objects = ins.objects)
 end
 
 keys_spot(d::TelescopeData, tm::Timing) = animation(
@@ -420,8 +413,7 @@ function build_adding(d::TelescopeData; size = (1280, 720))
         words!(ins, ax, n(:rule), (1.5, -10.2), rule; fontsize = 24, align = (:center, :bottom))
     end
     caption!(ins, ov, :caption; text = "Where two waves meet, they add up")
-    return (scene = fig.scene, args = (; phase, shift, title1 = titles[1], title2 = titles[2]), objects = ins.objects,
-            controls = ins.controls)
+    return (scene = fig.scene, args = (; phase, shift, title1 = titles[1], title2 = titles[2]), objects = ins.objects)
 end
 
 function keys_adding(d::TelescopeData, tm::Timing)
@@ -519,12 +511,12 @@ function build_rule(d::TelescopeData; size = (1280, 720))
                                  alpha = 0, name = :width))
     words!(ins, ax, :width_text, (-1.2, 0), "width"; color = rgbf(GLASS_TINT), fontsize = 24, rotation = π / 2,
            align = (:center, :bottom))
-    ov = Scene(fig.scene; camera = campixel!, clear = false)
+    ov = overlay(fig)
     caption!(ins, ov, :caption_edge; line = 1,
              text = "Edge of the spot: one edge of the lens is 1 wavelength farther than the other")
     caption!(ins, ov, :caption_named; line = 1, text = "Diffraction: even perfect optics produce a spot")
     caption!(ins, ov, :caption_width; text = "At the same focal distance: wider opening → smaller spot")
-    return (scene = fig.scene, args = (; y), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; y), objects = ins.objects)
 end
 
 function keys_rule(d::TelescopeData, tm::Timing)
@@ -572,7 +564,7 @@ function build_opening(d::TelescopeData; size = (1280, 720))
     callout!(ins, ov, sc, :label_wide_edge, Point3f(W * xe(wide), down - W * 15f0, 0);
              text = "far edge: 1 wavelength farther → dark", offset = (40, -40))
     caption!(ins, ov, :caption; text = "Twice the opening → half the spot")
-    return (scene = fig.scene, args = (; phase, paths, highlight), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; phase, paths, highlight), objects = ins.objects)
 end
 
 keys_opening(d::TelescopeData, tm::Timing) = animation(Dict(
@@ -613,7 +605,7 @@ function build_colours(d::TelescopeData; size = (1280, 720))
     callout!(ins, ov, sc, :label_bigger, tip(down); text = "bigger spot", offset = (30, -60))
     caption!(ins, ov, :caption_length; line = 1, text = "No wavelength, no blur: the wavelength sets the size of the spot")
     caption!(ins, ov, :caption_radio; text = "Radio waves are ~400 000× longer than light: radio telescopes are giant dishes")
-    return (scene = fig.scene, args = (; phase), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; phase), objects = ins.objects)
 end
 
 function keys_colours(d::TelescopeData, tm::Timing)
@@ -657,7 +649,7 @@ function build_formula(d::TelescopeData; size = (1280, 720))
            align = (:center, :center))
     words!(ins, ov, :result, (w / 2, h * 0.32), "spot size ≈ wavelength × f-number"; fontsize = 40,
            color = rgbf(SUNLIGHT), align = (:center, :center))
-    return (scene = fig.scene, args = (;), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (;), objects = ins.objects)
 end
 
 function keys_formula(d::TelescopeData, tm::Timing)

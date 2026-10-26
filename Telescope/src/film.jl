@@ -38,7 +38,7 @@ const TELESCOPE_CUT = [
     "scene_17",
 ]
 
-"The film, as the editor assembles it (`partclip`, `filmsequence`)."
+"The film, as the editor assembles it (`partclips`, `filmsequence`)."
 const FILM = Film(@__MODULE__, TELESCOPE_PARTS, telescope_data, narration_timing, narration_voice, TELESCOPE_CUT)
 
 """

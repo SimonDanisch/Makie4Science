@@ -25,8 +25,8 @@ function build_star(d::TelescopeData; size = (1280, 720))
     first = mesh!(sc, Sphere(Point3f(STARS[1].pos..., 0), 0.35f0); material = star_material(STARS[1].tint), name = :star)
     other = mesh!(sc, Sphere(Point3f(STARS[2].pos..., 0), 0.35f0); visible = false, name = :star2,
                   material = lift(s -> star_material(s .* STARS[2].tint), second))
-    solid!(ins, "Star", first; materials = false)
-    solid!(ins, "Second star", other; materials = false)
+    solid!(ins, "Star", first)
+    solid!(ins, "Second star", other)
     # the crests near the first star as soap bubbles: as many as are out at the time
     shells = lift(t -> crest_shells(t), time)
     ball = normal_mesh(Tesselation(Sphere(Point3f(0), 1f0), 96))
@@ -37,7 +37,7 @@ function build_star(d::TelescopeData; size = (1280, 720))
         on(s -> (k <= length(s) && (translate!(p, centre); scale!(p, Vec3f(s[k][1])))), shells; update = true)
         p
     end
-    solid!(ins, "Crest bubbles", bubbles...; materials = false)
+    solid!(ins, "Crest bubbles", bubbles...)
     # the crests in the plane, fading with the distance from the camera
     g = Grid(Point2f(-130, -50), Point2f(140, 130), 12 / 1.5f0)
     cam = cameracontrols(sc)
@@ -46,8 +46,8 @@ function build_star(d::TelescopeData; size = (1280, 720))
         wave_material(toimage(star_glow(stars_at(s), g, t; fog)); scale = 2f0)
     end
     solid!(ins, "Light in the plane", mesh!(sc, sheet(bounds(g), 0f0); material = light, name = :plane,
-                                             inspectable = false); materials = false)
-    return (scene = sc, args = (; time, second), objects = ins.objects, controls = ins.controls)
+                                             inspectable = false))
+    return (scene = sc, args = (; time, second), objects = ins.objects)
 end
 
 keys_star(d::TelescopeData) = animation(
@@ -120,11 +120,10 @@ function build_window(d::TelescopeData; size = (1280, 720), λ = 1.2f0, beat = 1
     softbox!(sc, Point3f(8, 10, 40), 16, 6; Le = light .* (100, 100, 112), name = :softbox_fill)
     plane = mesh!(sc, sheet(bounds(g), 0.01f0); name = :plane, inspectable = false,
                   material = lift(WindowLight(g, δ, λ, narrow, wide), time, narrow_on, wide_on, faint))
-    solid!(ins, "Light in the plane", plane; materials = false)
+    solid!(ins, "Light in the plane", plane)
     solid!(ins, "Narrow window", window_frame!(sc, narrow; name = :frame_narrow, visible = narrow_on))
     solid!(ins, "Wide window", window_frame!(sc, wide; name = :frame_wide, visible = wide_on))
-    return (scene = sc, args = (; time, faint, narrow = narrow_on, wide = wide_on), objects = ins.objects,
-            controls = ins.controls)
+    return (scene = sc, args = (; time, faint, narrow = narrow_on, wide = wide_on), objects = ins.objects)
 end
 
 keys_window(d::TelescopeData) = animation(
@@ -158,7 +157,7 @@ function build_airy(d::TelescopeData; size = (1280, 720), N = 4f0, npix = AIRY_P
                           color = :white, alpha = 0.08, linewidth = 1, name = :grid_y))
     object!(ins, "The row", lines!(ax, Rect2f(0.5, mid - 0.5, npix, 1); color = :white, linewidth = 2, name = :row))
     words!(ins, ax, :note, (npix + 0.5, 0.2), "brightened to show the rings"; fontsize = 18, align = (:right, :top))
-    return (scene = fig.scene, args = (; reveal, whole), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; reveal, whole), objects = ins.objects)
 end
 
 keys_airy(d::TelescopeData) = animation(Dict(
@@ -185,7 +184,7 @@ function build_blur(d::TelescopeData; size = (1280, 720), npix = BLUR_PIXELS, Nb
         object!(ins, "Picture · $title", image!(ax, 0 .. npix, 0 .. npix, img; interpolate = false, name);
                 attributes = ("alpha", "visible"))
     end
-    return (scene = fig.scene, args = (; count), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; count), objects = ins.objects)
 end
 
 """Each star added as its spot, one after the other, from 1 s to 9 s."""
@@ -221,7 +220,7 @@ function build_two_stars(d::TelescopeData; size = (1280, 720))
         telescope!(sc, o.tel, o.g, lift((φ, g) -> observation_light(o, φ; grow = g), phase, grow); name,
                    inspector = ins, offset = off, studio = k == 1)
     end
-    return (scene = fig.scene, args = (; phase, grow), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; phase, grow), objects = ins.objects)
 end
 
 keys_two_stars(d::TelescopeData) = animation(posekeys(comparison_poses(10)),
@@ -246,7 +245,7 @@ function build_sorting(d::TelescopeData; size = (1280, 720))
         tex
     end
     telescope!(sc, tel, g, light; inspector = ins)
-    return (scene = fig.scene, args = (; phase, rays), objects = ins.objects, controls = ins.controls)
+    return (scene = fig.scene, args = (; phase, rays), objects = ins.objects)
 end
 
 keys_sorting(d::TelescopeData) = animation(

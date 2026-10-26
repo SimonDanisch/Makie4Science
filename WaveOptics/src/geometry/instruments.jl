@@ -69,9 +69,11 @@ function rounded_box(lo, hi, r; taper = 1f0, m = 6)
     return GeometryBasics.Mesh(P, F; normal = N)
 end
 
-"""Glass elements as whole solids along the x axis (cemented ones a hair apart)."""
-glass_solids(elements) = [(around(profile(e; gap = k > 1 && elements[k-1].back == e.front ? 0.05f0 : 0f0), Vec3f(0), Vec3f(1, 0, 0)),
-                           glass_material(e.glass)) for (k, e) in enumerate(elements)]
+"""Glass elements as whole solids along the x axis (cemented ones a hair apart), with `coating`; see [`lens_meshes`](@ref)."""
+glass_solids(elements; coating = :mgf2) =
+    [(moved(part.mesh, frame_to(XAXIS)), part.material) for (k, e) in enumerate(elements)
+     for part in lens_meshes(e, Symbol(:lens_, k); φ = (0f0, 2f0 * Float32(π)), caps = false, coating,
+                             gap = k > 1 && elements[k-1].back == e.front ? 0.05f0 : 0f0)]
 
 """A tube along x from `x0` to `x1`, radii `r0..r1`, its bore in another material."""
 lined(x0, x1, r0, r1, outside, inside) =
@@ -143,7 +145,9 @@ function refractor_parts()
     finder = Vec3f(0, 0, 104)
     push!(p, (around(annulus(255f0, 430f0, 15.5f0, 18f0), finder, XAXIS), KIT.white))
     push!(p, (around(annulus(225f0, 262f0, 17f0, 21f0), finder, XAXIS), KIT.body))
-    push!(p, (around(profile(Element(Surface(250f0, 60f0), Surface(254f0, -60f0), 16f0, BK7)), finder, XAXIS), glass_material(BK7)))
+    # 5.5 mm thick in the middle: two 60 mm curves over a 16 mm radius need it for a real edge.
+    append!(p, [(moved(m, frame_to(XAXIS), finder), mat)
+                for (m, mat) in glass_solids([Element(Surface(249.5f0, 60f0), Surface(255f0, -60f0), 16f0, BK7)])])
     push!(p, (around(disc(0f0, 6f0, 15.5f0), finder + Vec3f(262, 0, 0), XAXIS), KIT.black))
     push!(p, (around(disc(0f0, 40f0, 9f0), finder + Vec3f(430, 0, 0), XAXIS), KIT.body))
     push!(p, (around(annulus(0f0, 10f0, 6f0, 11f0), finder + Vec3f(470, 0, 0), XAXIS), KIT.rubber))
@@ -187,7 +191,7 @@ function camera_parts()
     push!(p, (ring(-28, -26, 31.9, 32.6), KIT.metal))
     push!(p, (ring(-88, -80, 15.5, 32.4), KIT.body))
     append!(p, glass_solids([Element(Surface(-86f0, 30f0), Surface(-80f0, 200f0), 15.6f0, SK16),
-                             Element(Surface(-74f0, 60f0), Surface(-68f0, -60f0), 15.6f0, F2)]))
+                             Element(Surface(-74f0, 60f0), Surface(-68f0, -60f0), 15.6f0, F2)]; coating = :multi))
     push!(p, (ring(-58, -57, 12.5, 24), KIT.black))                                      # iris
     push!(p, (ring(-90, -86, 15.6, 17), KIT.black))
     push!(p, (around(disc(0f0, 2f0, 24f0), Vec3f(-46, 0, 0), XAXIS), KIT.black))

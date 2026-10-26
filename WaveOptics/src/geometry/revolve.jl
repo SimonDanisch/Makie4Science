@@ -128,17 +128,30 @@ end
 """Points along a surface from r0 to r1."""
 surface_run(s::Surface, r0, r1; n = 48) = [Point2f(surface_x(s, r), r) for r in range(r0, r1; length = n)]
 
-"""Closed profile of a lens element, from the axis up the back, over the rim, down the front."""
-function profile(e::Element; gap = 0f0)
+"""
+    profile(e; gap, chamfer, n) -> Profile
+
+Closed profile of a lens element, from the axis up the back, over the rim, down
+the front, `n` points per surface. With a `chamfer`, each polished surface stops
+that far inside the rim and a 45° bevel leads out to the rim, as on a real lens.
+Runs: axis, back surface, [back bevel], rim, [front bevel], front surface.
+"""
+function profile(e::Element; gap = 0f0, chamfer = 0f0, n = 48)
     front = Surface(e.front.x + gap, e.front.R)
     back = e.back
-    xb, xf = surface_x(back, e.a), surface_x(front, e.a)
-    return Profile([
-        [Point2f(front.x, 0), Point2f(back.x, 0)],
-        surface_run(back, 0f0, e.a),
-        [Point2f(xb, e.a), Point2f(xf, e.a)],
-        surface_run(front, e.a, 0f0),
-    ])
+    r = e.a - chamfer
+    xb, xf = surface_x(back, r), surface_x(front, r)
+    runs = [[Point2f(front.x, 0), Point2f(back.x, 0)], surface_run(back, 0f0, r; n)]
+    if chamfer > 0
+        xb - xf > 3chamfer || throw(ArgumentError("edge of $e too thin for a $chamfer chamfer"))
+        append!(runs, [[Point2f(xb, r), Point2f(xb - chamfer, e.a)],
+                       [Point2f(xb - chamfer, e.a), Point2f(xf + chamfer, e.a)],
+                       [Point2f(xf + chamfer, e.a), Point2f(xf, r)]])
+    else
+        push!(runs, [Point2f(xb, e.a), Point2f(xf, e.a)])
+    end
+    push!(runs, surface_run(front, r, 0f0; n))
+    return Profile(runs)
 end
 
 """An annulus from x0 to x1 between radii r0 < r1, as four runs: inner, back, outer, front."""
