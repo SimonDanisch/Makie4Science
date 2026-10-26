@@ -42,8 +42,10 @@ to preview, edit and render on a farm.
 
 A part with a 3D view is two clips: its picture, path traced, and its labels
 (text and everything drawn in its overlay), rasterized over it on a clear
-background. Each is keyed with what it draws, so frames that differ only in
-their labels are one traced picture. A flat part is one rasterized clip.
+background. Each is keyed with what it draws, so with the editor's frame
+caches, frames that differ only in their labels are one traced picture. A flat
+part is one rasterized clip. `Telescope/tools/render_farm.jl` renders the film
+on the LAN farm and encodes it.
 Scenes are laid out at 1280×720 and drawn at 1920×1080 (`px_per_unit` 1.5).
 A picture is traced into linear HDR and finished by the editor's effects:
 OIDN, an exposure grade (`log2(0.6)` stops) and ACES display mapping.

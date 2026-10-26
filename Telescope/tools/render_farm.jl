@@ -11,10 +11,10 @@ farm client in its own application root, which must hold the same code:
         FarmClient.serve(FarmClient.Client(ARGS[1], ARGS[2]))' <gpus> <this host>:7600
 
 Once a client of every named machine is connected (as the farm server names
-them: its host, with its address where hosts share a name), the farm renders on
-those alone, every distinct traced picture once; the project adopts the frames' planes and the editor's own export
-composes the film with its narration. Run again to resume the job in
-`job directory`, keeping every committed frame; a changed edit needs a new one. `main(...; frames)` renders
+them: its host, with its address where hosts share a name), the farm renders
+every frame on those alone, and `VideoEditor.encodefarm!` encodes them with the
+narration. Run again to resume the job in `job directory`, keeping every
+committed frame; a changed edit needs a new one. `main(...; frames)` renders
 only those timeline frames (a sample before the whole film) and exports nothing.
 """
 
@@ -23,10 +23,7 @@ import VideoEditor as VE
 
 function main(project, jobdir, output, machines::AbstractVector{<:AbstractString}; frames = nothing, timeout = 3600)
     VE.usebackend!(RayMakie)
-    # Made once: the project then also holds the frames adopted from it, which
-    # are not part of the edit the job renders.
-    job = isfile(joinpath(jobdir, "job", "job.toml")) ? VE.RenderJob(jobdir) : VE.renderjob(project, jobdir; portable = false)
-    delivery = VE.loadproject(project)
+    job = VE.renderjob(project, jobdir; portable = false)
     server = VE.FarmServer()   # its own, closed when done (`farmserver()` is the session's)
     try
         connected() = [m.name for m in VE.farmmachines(server)]
@@ -39,16 +36,13 @@ function main(project, jobdir, output, machines::AbstractVector{<:AbstractString
         others = setdiff(connected(), machines)
         println("MACHINES ", join(machines, ", "), isempty(others) ? "" : "; left out: " * join(others, ", "))
         flush(stdout)
-        status = VE.renderfarm!(job, VE.farmworkers(job, server; exclude = others); reuse = delivery, frames,
+        status = VE.renderfarm!(job, VE.farmworkers(job, server; exclude = others); frames,
                                 progress = (done, total) -> (println("FARM $done/$total"); flush(stdout)))
         (frames !== nothing || status["paused"] || status["completed"] < status["total"]) && return status
     finally
-        VE.adoptfarmcache!(delivery, job)
-        VE.saveproject(project, delivery; checkpoint = false)
         close(server)
     end
-    VE.exportvideo(output, delivery; encoder_options = (crf = 18, preset = "medium"))
-    VE.saveproject(project, delivery; checkpoint = false)
+    VE.encodefarm!(jobdir, output; crf = 18, preset = "slow")
     println("DONE ", output)
     return output
 end

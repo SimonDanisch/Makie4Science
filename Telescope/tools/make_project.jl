@@ -9,7 +9,8 @@ performance and loads no speech model. 1920×1080 from scenes laid out at
 1280×720, 30 fps. Previews rasterize; a bake or an export traces every 3D
 picture with `spp` samples and up to `max_depth` bounces, denoised, graded and
 display-mapped by the editor, with its labels drawn over it. Written to
-`gen/telescope.videoedit` unless a path is given; frame caches beside it.
+`gen/telescope.videoedit` unless a path is given. Without frame caches: a
+traced frame's planes, which caches keep for later edits, are ~100 MB each.
 """
 
 using Telescope, ScienceFilms, VideoEditor, RayMakie
@@ -20,7 +21,6 @@ function main(path = joinpath(ROOT, "gen", "telescope.videoedit"); spp = 256, ma
     mkpath(dirname(path))
     VideoEditor.usebackend!(RayMakie)
     seq = filmsequence(Telescope.FILM; canvas = (1920, 1080), layout = (1280, 720), fps = 30, spp, max_depth)
-    VideoEditor.enabletrackcache!(seq, path * ".frames")
     VideoEditor.saveproject(path, seq)
     frames = VideoEditor.seqlength(seq)
     println(path, ": ", length(seq.clips), " clips, ", frames, " frames (", round(frames / 30 / 60; digits = 1),
