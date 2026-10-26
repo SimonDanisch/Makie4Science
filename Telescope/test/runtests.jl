@@ -6,7 +6,7 @@
 # Needs a GPU (the arrival beat runs its simulation on one) and the film's
 # artifacts, which it downloads on first use.
 
-using Test, Telescope, ScienceFilms
+using Test, Telescope, ScienceFilms, Makie
 import ScienceFilms as SF
 
 const FILM = Telescope.FILM
@@ -20,6 +20,23 @@ function unresolved(built, anim)
         head == "args" && return !hasproperty(built.args, Symbol(first(split(rest, '.'))))
         plot = SF.findplot(built.scene, Symbol(head))
         return plot === nothing || !haskey(plot.attributes, Symbol(rest))
+    end
+end
+
+"""Every top-level plot of `scene` and the scenes below it."""
+allplots(scene) = [scene.plots; reduce(vcat, (allplots(c) for c in scene.children); init = Any[])]
+
+"""
+The plot names keyed in `anim` that the editor would give to another plot: a
+name that is its plot's kind (`:caption` for a caption) reads as no name and is
+replaced, and of two plots with one name the second is renamed.
+"""
+function renamed(built, anim)
+    names = [Makie.to_value(get(p.attributes, :name, nothing)) for p in allplots(built.scene)]
+    keyed = unique(first(split(path, '.')) for path in keys(anim) if !startswith(path, "camera") && !startswith(path, "args"))
+    return filter(keyed) do n
+        plot = SF.findplot(built.scene, Symbol(n))
+        plot !== nothing && (Symbol(n) === Makie.plotkey(typeof(plot)) || count(==(Symbol(n)), names) > 1)
     end
 end
 
@@ -43,6 +60,7 @@ end
     built = part.build(DATA; size = (640, 360))
     anim = part isa Beat ? part.keys(DATA, Telescope.narration_timing(name)) : part.keys(DATA)
     @test isempty(unresolved(built, anim))
+    @test isempty(renamed(built, anim))
     # what the editor lists names plots of the scene
     @test all(n -> SF.findplot(built.scene, Symbol(n)) !== nothing, (n for o in built.objects for n in o.plots))
     for t in range(0, duration(name, part); length = 4)

@@ -143,8 +143,10 @@ function build_airy(d::TelescopeData; size = (1280, 720), N = 4f0, npix = AIRY_P
     img = sensor_image(N, npix)
     img ./= maximum(img)
     mid = (npix + 1) ÷ 2
-    fig = Figure(; size, backgroundcolor = :black)
-    ax = Axis(fig[1, 1]; DARK..., title = lift(w -> w ? "the whole sensor: a disk with rings" : "one row of pixels", whole))
+    # room above the picture for its title
+    fig = Figure(; size, backgroundcolor = :black, figure_padding = (16, 16, 16, 52))
+    ax = Axis(fig[1, 1]; DARK...)
+    titleover!(ins, overlay(fig), ax, :title, lift(w -> w ? "the whole sensor: a disk with rings" : "one row of pixels", whole))
     # the picture grows outwards from the middle row
     shown = lift(r -> glow_pixels([abs(j - mid) <= r ? img[i, j] : 0f0 for i in 1:npix, j in 1:npix]), reveal)
     object!(ins, "The pixels", image!(ax, 0.5 .. npix + 0.5, 0.5 .. npix + 0.5, shown; interpolate = false,

@@ -15,6 +15,30 @@ rgba(c, a = 1) = (rgb = RGBf(Makie.to_color(c)); RGBAf(rgb.r, rgb.g, rgb.b, a))
 """A colour faded by an `Observable` opacity: for what has no `alpha` of its own (an axis title)."""
 faded(c, alpha::Observable) = lift(a -> rgba(c, a), alpha)
 
+"""
+Axis `ax`'s title plot, named `name` and offered to the editor, so its fade can
+be keyed like any plot's: the title itself is a property of the axis, which the
+editor does not key.
+"""
+function nametitle!(ins, ax, name::Symbol)
+    title = ax.elements[:title]
+    Makie.update!(title; name)
+    label!(ins, "Title · " * ax.title[], title)
+    return title
+end
+
+"""
+A title above axis `ax`, drawn in the overlay `ov` and named `name`, for a title
+whose words change: they derive from a keyed argument here, which an axis's own
+title cannot (the editor keys plots). The figure leaves room for it.
+"""
+function titleover!(ins, ov, ax, name::Symbol, text; fontsize = 24, gap = 8)
+    pos = lift(vp -> Point2f(vp.origin[1] + vp.widths[1] / 2, vp.origin[2] + vp.widths[2] + gap), ax.scene.viewport)
+    p = text!(ov, pos; text, fontsize, font = :bold, color = :white, align = (:center, :bottom), name)
+    label!(ins, "Title", p)
+    return p
+end
+
 """A text in a flat picture, named `name`, hidden until keyed, offered to the editor as `Text · <text>`."""
 function words!(ins, ax, name::Symbol, pos, text; alpha = 0, color = :white, kw...)
     p = text!(ax, textposition(pos); text, color, alpha, name, kw...)

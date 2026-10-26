@@ -91,6 +91,11 @@ function sceneclip(film::SF.Film, name::AbstractString, layer::Symbol, nsource::
     clip = VE.sceneclip(VE.buildscene(build); build, frames = nsource, canvas = layout, framerate = fps,
                         backend = :RayMakie)
     render!(clip, Val(layer); spp, max_depth)
+    return drawat!(clip, canvas, layout)
+end
+
+"Draw a scene clip laid out at `layout` at `canvas` pixels (after its render settings, which replace its options)."
+function drawat!(clip, canvas, layout)
     resize!(clip.source, canvas)
     px_per_unit = canvas[1] / layout[1]
     clip.source.screenopts[:px_per_unit] = px_per_unit

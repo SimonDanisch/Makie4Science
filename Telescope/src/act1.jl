@@ -232,7 +232,7 @@ function build_refraction(d::TelescopeData; size = (1280, 720))
              offset = (-40, 60))
     callout!(ins, ov, ax.scene, :label_direction, Point3f(s.x0 + 16f0 * dir[1], 16f0 * dir[2], 0);
              text = "new direction", offset = (40, -50))
-    caption!(ins, ov, :caption; text = "Refraction: light bends because it slows down")
+    caption!(ins, ov, :caption_text; text = "Refraction: light bends because it slows down")
     return (scene = fig.scene, args = (; phase, glass, trace, crest), objects = ins.objects)
 end
 
@@ -249,7 +249,7 @@ function keys_refraction(d::TelescopeData, tm::Timing)
         "label_air.alpha" => appear(tm, 2), "label_glass.alpha" => appear(tm, 2),
         "label_slower.alpha" => appear(tm, 2; delay = 1.5f0) * (1f0 - appear(tm, 3)),
         "label_enters.alpha" => appear(tm, 4) * trace, "label_air_end.alpha" => appear(tm, 4; delay = 1.5f0) * trace,
-        "label_direction.alpha" => appear(tm, 5), "caption.alpha" => appear(tm, 6)))
+        "label_direction.alpha" => appear(tm, 5), "caption_text.alpha" => appear(tm, 6)))
 end
 
 beat_refraction() = Beat("b02_refraction", [
@@ -367,7 +367,7 @@ function build_spot(d::TelescopeData; size = (1280, 720))
     callout!(ins, ov, sc, :label_centre, tip(0.5f0); text = "bright centre", offset = (60, 60))
     callout!(ins, ov, sc, :label_gap, tip(4.5f0); text = "dark gap", offset = (60, 40))
     callout!(ins, ov, sc, :label_bumps, tip(6.5f0); text = "faint bumps", offset = (60, 80))
-    caption!(ins, ov, :caption; text = "Not a point: a small spot")
+    caption!(ins, ov, :caption_text; text = "Not a point: a small spot")
     return (scene = fig.scene, args = (; phase), objects = ins.objects)
 end
 
@@ -376,7 +376,7 @@ keys_spot(d::TelescopeData, tm::Timing) = animation(
     Dict("args.phase" => ramp(0, tm.duration, 0, 1.5f0 * tm.duration),
          "label_bars.alpha" => appear(tm, 1; delay = 1f0), "label_centre.alpha" => appear(tm, 3),
          "label_gap.alpha" => appear(tm, 3; delay = 1.2f0), "label_bumps.alpha" => appear(tm, 3; delay = 2.4f0),
-         "caption.alpha" => appear(tm, 2)))
+         "caption_text.alpha" => appear(tm, 2)))
 
 beat_spot() = Beat("b04_spot", [
     "Each bar behind the sensor shows how much light one pixel has collected.",
@@ -390,13 +390,13 @@ function build_adding(d::TelescopeData; size = (1280, 720))
     fig, ov = flat(; size)
     ins = Inspector()
     phase, shift = Observable(0f0), Observable(0f0)
-    titles = (Observable(0f0), Observable(0f0))
     u = range(0f0, 3f0; length = 600)
     panels = ((Observable(0f0), "in step", "crest + crest → twice as high: bright"),
               (shift, "half a wavelength apart", "crest + trough → nothing: dark"))
     for (col, (δ, title, rule)) in enumerate(panels)
-        ax = Axis(fig[1, col]; INSET..., title, titlecolor = faded(:white, titles[col]), titlesize = 28,
-                  bottomspinevisible = false, limits = (-0.1, 3.6, -10.2, 1.6))
+        ax = Axis(fig[1, col]; INSET..., title, titlesize = 28, bottomspinevisible = false,
+                  limits = (-0.1, 3.6, -10.2, 1.6))
+        Makie.update!(nametitle!(ins, ax, Symbol(:title, col)); alpha = 0)
         a = lift(φ -> cos.(2f0 * Float32(π) .* (u .- φ)), phase)
         b = lift((φ, s) -> cos.(2f0 * Float32(π) .* (u .- φ .- s)), phase, δ)
         n(x) = Symbol(x, col)
@@ -412,20 +412,20 @@ function build_adding(d::TelescopeData; size = (1280, 720))
         end
         words!(ins, ax, n(:rule), (1.5, -10.2), rule; fontsize = 24, align = (:center, :bottom))
     end
-    caption!(ins, ov, :caption; text = "Where two waves meet, they add up")
-    return (scene = fig.scene, args = (; phase, shift, title1 = titles[1], title2 = titles[2]), objects = ins.objects)
+    caption!(ins, ov, :caption_text; text = "Where two waves meet, they add up")
+    return (scene = fig.scene, args = (; phase, shift), objects = ins.objects)
 end
 
 function keys_adding(d::TelescopeData, tm::Timing)
     keys = Dict("args.phase" => ramp(0, tm.duration, 0, 0.4f0 * tm.duration),
                 "args.shift" => ramp(tm.starts[3], tm.ends[3], 0, 0.5f0; ease = :smooth),
-                "caption.alpha" => appear(tm, 1))
+                "caption_text.alpha" => appear(tm, 1))
     for (col, waves, sums, says) in ((1, appear(tm, 1), appear(tm, 2), appear(tm, 2)),
                                      (2, appear(tm, 3), appear(tm, 3), appear(tm, 4)))
         for name in ("wave_a", "wave_b", "name_a", "name_b")
             keys["$name$col.alpha"] = waves
         end
-        keys["args.title$col"] = waves
+        keys["title$col.alpha"] = waves
         keys["sum$col.alpha"] = sums
         keys["name_sum$col.alpha"] = sums
         keys["baseline$col.alpha"] = 0.25f0 * sums
@@ -563,7 +563,7 @@ function build_opening(d::TelescopeData; size = (1280, 720))
              text = "far edge: ½ wavelength farther → still bright", offset = (40, -40))
     callout!(ins, ov, sc, :label_wide_edge, Point3f(W * xe(wide), down - W * 15f0, 0);
              text = "far edge: 1 wavelength farther → dark", offset = (40, -40))
-    caption!(ins, ov, :caption; text = "Twice the opening → half the spot")
+    caption!(ins, ov, :caption_text; text = "Twice the opening → half the spot")
     return (scene = fig.scene, args = (; phase, paths, highlight), objects = ins.objects)
 end
 
@@ -572,7 +572,7 @@ keys_opening(d::TelescopeData, tm::Timing) = animation(Dict(
     "args.highlight" => switch(tm.starts[2], false, true),
     "label_narrow.alpha" => appear(tm, 1), "label_wide.alpha" => appear(tm, 1; delay = 1.5f0),
     "label_pixel.alpha" => appear(tm, 2), "label_narrow_edge.alpha" => appear(tm, 3),
-    "label_wide_edge.alpha" => appear(tm, 4), "caption.alpha" => appear(tm, 5)))
+    "label_wide_edge.alpha" => appear(tm, 4), "caption_text.alpha" => appear(tm, 5)))
 
 beat_opening() = Beat("b11_opening", [
     "First, the width. [Here](-1) are two telescopes, one with a lens twice as wide as the other.",

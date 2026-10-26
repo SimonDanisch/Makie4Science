@@ -58,7 +58,8 @@ last three wavelengths of it, stacked; below them in white their sum, what the
 pixel gets. Each wave's extra distance (compared with the shortest) is a
 bracket. `first` labels the pixel line. Named `name_…`.
 """
-function unrolled!(ins, pos, wl::Wavelets, members, args, fades; title, first = true, xlabel = true, name)
+function unrolled!(ins, pos, wl::Wavelets, members, args, fades; title, first = true, xlabel = true, name,
+                   visible = true)
     n = length(members)
     ysum = sum_baseline(n)
     beige(c = ON_BEIGE) = faded(c, fades.title)
@@ -73,7 +74,7 @@ function unrolled!(ins, pos, wl::Wavelets, members, args, fades; title, first = 
                   delays, args.phase) for row in 1:n]
     for (row, (m, wave)) in enumerate(zip(members, waves))
         c = POINT_COLORS[m]
-        p = lines!(ax, wave; color = rgbf(c), linewidth = 3, alpha = fades.shown, name = Symbol(name, :_wave, m))
+        p = lines!(ax, wave; color = rgbf(c), linewidth = 3, alpha = fades.shown, visible, name = Symbol(name, :_wave, m))
         object!(ins, "$title · wave $m", p)
         # its extra distance, once it has one
         extra = lift(d -> d[row] - minimum(d), delays)
@@ -150,11 +151,13 @@ function build_paths(d::TelescopeData; layouts, size = (1280, 720))
     fades = panel_fades(args)
     shown = Tuple{Axis, Vector{Int}}[]
     for (l, (rows, titles)) in enumerate(layouts)
+        # the layout shown: its panels' waves take it from the keyed argument, the rest of each panel follows
+        current = lift(k -> k == l, args.layout)
         axes = map(enumerate(zip(rows, titles))) do (r, (members, title))
             cell = length(rows) == 1 ? fig[1:nrows, 2] : fig[r, 2]
             ax = unrolled!(ins, cell, wl, members, args, fades; title, first = r == 1, xlabel = r == length(rows),
-                           name = Symbol(:panel, l, :_, r))
-            on(k -> (ax.blockscene.visible[] = k == l), args.layout; update = true)
+                           name = Symbol(:panel, l, :_, r), visible = current)
+            on(v -> (ax.blockscene.visible[] = v), current; update = true)
             (ax, collect(members))
         end
         l == 1 && append!(shown, axes)

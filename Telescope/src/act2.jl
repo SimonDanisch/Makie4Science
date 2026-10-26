@@ -301,12 +301,12 @@ function build_limits(d::TelescopeData; size = (1280, 720))
         words!(ins, ax, Symbol(:verdict, r), (4.5, y0 + 0.55f0), verdict; fontsize = 32, align = (:left, :center))
     end
     ov = overlay(fig)
-    caption!(ins, ov, :caption; text = "Same pixel size in every picture", fontsize = 22)
+    caption!(ins, ov, :caption_text; text = "Same pixel size in every picture", fontsize = 22)
     return (scene = fig.scene, args = (;), objects = ins.objects)
 end
 
 function keys_limits(d::TelescopeData, tm::Timing)
-    keys = Dict{String, Any}("caption.alpha" => appear(tm, 1))
+    keys = Dict{String, Any}("caption_text.alpha" => appear(tm, 1))
     for k in 1:3
         keys["header$k.alpha"] = appear(tm, 1; delay = 1.2f0 * (k - 1))
     end
