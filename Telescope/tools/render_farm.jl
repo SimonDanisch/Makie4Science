@@ -1,7 +1,7 @@
 """
 Render the film's project on the LAN farm and export it.
 
-    julia --project=<Science4Makie root> Telescope/tools/render_farm.jl <project> <job directory> <output.mp4> <machine>...
+    julia --project=<Science4Makie root> Telescope/tools/render_farm.jl <project> <job directory> <output.mp4> [--carry=<earlier job directory>] <machine>...
 
 The job is a snapshot of the project (`VideoEditor.renderjob`, `portable = false`:
 each developed package pinned by its code; `planes = false`: workers return
@@ -15,16 +15,21 @@ Once a client of every named machine is connected (as the farm server names
 them: its host, with its address where hosts share a name), the farm renders
 every frame on those alone, and `VideoEditor.encodefarm!` encodes them with the
 narration. Run again to resume the job in `job directory`, keeping every
-committed frame; a changed edit needs a new one. `main(...; frames)` renders
+committed frame; a changed edit needs a new one. Code changed (a fix deployed
+to every machine) makes a new job of the same edit: `--carry` takes the frames
+an earlier job of it committed (`VideoEditor.carryframes!`), so none is
+rendered twice. `main(...; frames)` renders
 only those timeline frames (a sample before the whole film) and exports nothing.
 """
 
 using VideoEditor, RayMakie, Telescope
 import VideoEditor as VE
 
-function main(project, jobdir, output, machines::AbstractVector{<:AbstractString}; frames = nothing, timeout = 3600)
+function main(project, jobdir, output, machines::AbstractVector{<:AbstractString}; frames = nothing, carry = nothing,
+              timeout = 3600)
     VE.usebackend!(RayMakie)
     job = VE.renderjob(project, jobdir; portable = false, planes = false)
+    carry === nothing || println("CARRIED ", VE.carryframes!(job, VE.RenderJob(carry)), " frames from ", carry)
     server = VE.FarmServer()   # its own, closed when done (`farmserver()` is the session's)
     try
         connected() = [m.name for m in VE.farmmachines(server)]
@@ -49,5 +54,6 @@ function main(project, jobdir, output, machines::AbstractVector{<:AbstractString
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    main(ARGS[1:3]..., ARGS[4:end])
+    carried = [chopprefix(a, "--carry=") for a in ARGS[4:end] if startswith(a, "--carry=")]
+    main(ARGS[1:3]..., filter(a -> !startswith(a, "--carry="), ARGS[4:end]); carry = isempty(carried) ? nothing : only(carried))
 end
