@@ -4,7 +4,8 @@ Render the film's project on the LAN farm and export it.
     julia --project=<Science4Makie root> Telescope/tools/render_farm.jl <project> <job directory> <output.mp4> <machine>...
 
 The job is a snapshot of the project (`VideoEditor.renderjob`, `portable = false`:
-each developed package pinned by its code). Every machine offers its GPUs with a
+each developed package pinned by its code; `planes = false`: workers return
+finished frames, not a traced frame's 100 MB of HDR planes). Every machine offers its GPUs with a
 farm client in its own application root, which must hold the same code:
 
     VIDEOEDITOR_FARM_PROJECT=<root> julia --project=<root> -e 'include("<VideoEditor>/FarmClient/src/FarmClient.jl");
@@ -23,7 +24,7 @@ import VideoEditor as VE
 
 function main(project, jobdir, output, machines::AbstractVector{<:AbstractString}; frames = nothing, timeout = 3600)
     VE.usebackend!(RayMakie)
-    job = VE.renderjob(project, jobdir; portable = false)
+    job = VE.renderjob(project, jobdir; portable = false, planes = false)
     server = VE.FarmServer()   # its own, closed when done (`farmserver()` is the session's)
     try
         connected() = [m.name for m in VE.farmmachines(server)]
