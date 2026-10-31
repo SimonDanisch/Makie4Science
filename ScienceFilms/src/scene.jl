@@ -78,7 +78,7 @@ emitting panel named `name`, so its brightness and placement can be keyed.
 function softbox!(scene, c::Point3f, w, d; Le = (6, 6, 6), target = nothing, name = :softbox)
     if target === nothing
         r = Rect3f(c .- Vec3f(w / 2, d / 2, 0), Vec3f(w, d, 0.001))
-        return mesh!(scene, r; material = Hikari.MediumInterface(Hikari.Emissive(Le = Le, two_sided = true)), name)
+        return mesh!(scene, r; material = Hikari.MediumInterface(Hikari.Emission(color = Le, two_sided = true)), name)
     end
     # Keep the long edge along the instrument as far as possible. A real
     # plane has one emitting face, rather than the sides of a thin box.
@@ -89,7 +89,7 @@ function softbox!(scene, c::Point3f, w, d; Le = (6, 6, 6), target = nothing, nam
     a, b = Float32(w / 2) * u, Float32(d / 2) * v
     points = Point3f[c - a - b, c + a - b, c + a + b, c - a + b]
     panel = GeometryBasics.Mesh(points, GLTriangleFace[(1, 2, 3), (1, 3, 4)]; normal = fill(n, 4))
-    return mesh!(scene, panel; material = Hikari.MediumInterface(Hikari.Emissive(Le = Le, two_sided = false)), name)
+    return mesh!(scene, panel; material = Hikari.MediumInterface(Hikari.Emission(color = Le, two_sided = false)), name)
 end
 
 """

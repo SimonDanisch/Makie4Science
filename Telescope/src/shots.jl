@@ -14,7 +14,7 @@ const STARS = (Star(Point2f(0, 0), SUNLIGHT), Star(Point2f(0, 20), SECONDARY_LIG
 stars_at(second) = second > 0 ? [STARS[1], Star(STARS[2].pos, second .* STARS[2].tint)] : [STARS[1]]
 
 """A star's glowing core: emissive, in the star's colour whitened."""
-star_material(tint) = Hikari.MediumInterface(Hikari.Emissive(Le = 6f0 .* (0.5f0 .+ 0.5f0 .* tint), two_sided = true))
+star_material(tint) = Hikari.MediumInterface(Hikari.Emission(color = 6f0 .* (0.5f0 .+ 0.5f0 .* tint), two_sided = true))
 
 function build_star(d::TelescopeData; size = (1280, 720))
     ins = Inspector()
@@ -33,7 +33,7 @@ function build_star(d::TelescopeData; size = (1280, 720))
     centre = Vec3f(STARS[1].pos..., 0)
     bubbles = map(1:MAX_SHELLS) do k
         p = mesh!(sc, ball; visible = lift(s -> k <= length(s), shells), name = Symbol(:bubble, k),
-                  material = lift(s -> Hikari.ThinDielectric(; eta = k <= length(s) ? s[k][2] : 1f0), shells))
+                  material = lift(s -> Hikari.ThinDielectric(; ior = k <= length(s) ? s[k][2] : 1f0), shells))
         on(s -> (k <= length(s) && (translate!(p, centre); scale!(p, Vec3f(s[k][1])))), shells; update = true)
         p
     end
@@ -62,7 +62,7 @@ shot_star() = Shot("star", 60, build_star, keys_star)
 # ── window frames: the direction beat's (act 1) and the window again (act 2) ──
 
 """Brushed gold: warm and soft, between bright aluminium (which flickered against the crests) and black (dead)."""
-const GOLD = Hikari.Conductor(eta = (0.143f0, 0.374f0, 1.442f0), k = (3.983f0, 2.385f0, 1.603f0), roughness = 0.3)
+const GOLD = Hikari.Conductor(ior = (0.143f0, 0.374f0, 1.442f0), extinction = (3.983f0, 2.385f0, 1.603f0), roughness = 0.3)
 
 """
 A window frame lying on the plane around `r` (world units, or an Observable

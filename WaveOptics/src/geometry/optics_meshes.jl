@@ -19,11 +19,11 @@ The material a glass is drawn in: its own dispersion, so white light splits at
 its surfaces; flints (the dispersive, lead-bearing ones, Abbe number below 50)
 faintly yellow; the residual reflection of its `coating`.
 """
-glass_material(g::Glass; coating = :mgf2) = Hikari.Dielectric(; index = ior_spectrum(g),
-    Kt = g.Vd < 50 ? (0.97, 0.97, 0.93) : (1, 1, 1), Kr = getfield(COATINGS, coating))
+glass_material(g::Glass; coating = :mgf2) = Hikari.Glass(; ior = ior_spectrum(g),
+    color = g.Vd < 50 ? (0.97, 0.97, 0.93) : (1, 1, 1))
 
 "A lens's ground bevels: frosted, not polished."
-const GROUND_GLASS = Hikari.Dielectric(; index = 1.52f0, roughness = 0.4f0)
+const GROUND_GLASS = Hikari.Dielectric(; ior = 1.52f0, roughness = 0.4f0)
 "A lens's rim, blackened against stray light as on real optics."
 const EDGE_PAINT = Hikari.CoatedDiffuse(reflectance = (0.02, 0.02, 0.022), roughness = 0.5)
 

@@ -18,7 +18,7 @@ end
 """See-through emitter: no surface at all, only the texture's glow where a ray crosses it."""
 wave_material(tex; scale = 1f0) = Hikari.MediumInterface(
     Hikari.NullMaterial();
-    emission = Hikari.Emissive(Le = Hikari.Texture(tex), scale = scale, two_sided = true))
+    emission = Hikari.Emission(color = Hikari.Texture(tex), strength = scale, two_sided = true))
 
 """
     cutaway!(scene, meshes, g, tex, xmid; S, scale, offset, studio, name, inspector) -> sheet plot
