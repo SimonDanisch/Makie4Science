@@ -76,42 +76,53 @@ function crest_shells(t; λ = 1.5f0, every = 3, rmax = 24f0, rfade = 12f0)
 end
 
 """
-    window_glow(g, t, δ; λ, width, windows, faint, gain, base) -> Matrix{RGBSpectrum}
+    window_glow(g, t, δ; λ, width, origin, window, outside, bend, faint, gain, base, tints) -> Matrix{RGBSpectrum}
 
 Far from two stars: the warm star's flat wavefronts straight ahead, the
-blue star's tilted by `δ`, all crests faint (`faint`) at time `t`. Inside
-each of the `windows`, one warm and one blue crest are drawn bright: the
-two that pass nearest the window's centre, where they cross. Across a narrow
-window they stay one line; across a wide one they end up half a wavelength
-apart at its edges: two directions, clearly. `width` is a crest's width in
-wavelengths; `base` a dim glow everywhere, so the gaps are not pitch black.
+blue star's tilted by `δ`, all crests faint (`faint`) at time `t` (periods; at
+whole periods a crest of each passes through `origin`). The two crests that
+cross nearest `origin` are drawn bright inside `window` (a `Rect2f`, or
+`nothing`) and `outside` as bright beyond it: across a narrow window they stay
+one line, across a wide one they open into two. `bend` curves the crests
+around stars `1 / bend` away (0: flat). `width` is a crest's width in
+wavelengths; `base` a dim glow everywhere, so the gaps are not pitch black;
+`tints` the two stars' colours (a star faded in is its tint scaled).
 """
-function window_glow(g::Grid, t, δ; λ = 0.6f0, width = 0.07f0, windows = Rect2f[], faint = 0.3f0, gain = 1.6f0,
-                     base = (0f0, 0f0, 0f0))
+function window_glow(g::Grid, t, δ; λ = 0.6f0, width = 0.07f0, origin = Point2f(0, 0), window = nothing,
+                     outside = 0f0, bend = 0f0, faint = 0.3f0, gain = 1.6f0, base = (0f0, 0f0, 0f0),
+                     tints = (SUNLIGHT, SECONDARY_LIGHT))
     img = fill(Hikari.RGBSpectrum(0f0, 0f0, 0f0, 1f0), size(g))
     dirs = (Vec2f(1, 0), Vec2f(cos(δ), sin(δ)))
-    tints = (SUNLIGHT, SECONDARY_LIGHT)
-    # per window, per star: the crest (phase number) nearest to its centre
-    chosen = [[round(dot(Vec2f(minimum(w) + widths(w) / 2), d) / λ - t) for d in dirs] for w in windows]
+    # the crest of each star nearest the origin: the two that cross there
+    chosen = round(-Float32(t))
     Threads.@threads for j in 1:size(g)[2]
         for i in 1:size(g)[1]
             p = cellcenter(g, i, j)
-            k = findfirst(w -> p in w, windows)
+            lit = gain * (inwindow(window, p) ? 1f0 : Float32(outside))
             r_, g_, b_ = base
-            for (s, (d, c)) in enumerate(zip(dirs, tints))
-                ph = dot(Vec2f(p), d) / λ - t
-                line = exp(-((ph - round(ph)) / width)^2)
-                a = faint * line
-                if k !== nothing
-                    # the chosen crest, bright
-                    a += gain * exp(-((ph - chosen[k][s]) / width)^2)
-                end
+            for (d, c) in zip(dirs, tints)
+                ph = arrived(Vec2f(p - origin), d, bend) / λ - t
+                a = faint * exp(-((ph - round(ph)) / width)^2) + lit * exp(-((ph - chosen) / width)^2)
                 r_ += a * c[1]; g_ += a * c[2]; b_ += a * c[3]
             end
             img[i, j] = Hikari.RGBSpectrum(r_, g_, b_, 1f0)
         end
     end
     return img
+end
+
+inwindow(::Nothing, p) = false
+inwindow(window::Rect2f, p) = p in window
+
+"""
+How much farther than at the origin the wave of a star `1 / bend` back along
+its direction `d` has come at `q` (straight on at `bend = 0`): written without
+the difference of two large distances, which loses every digit as the star
+recedes.
+"""
+function arrived(q::Vec2f, d::Vec2f, bend)
+    along, qq = dot(q, d), dot(q, q)
+    return (2along + bend * qq) / (sqrt(1 + 2bend * along + bend^2 * qq) + 1)
 end
 
 """Light from far away: flat waves travelling along `dir`."""

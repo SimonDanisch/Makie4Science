@@ -43,15 +43,15 @@ layerargs(name) = EXT.hasview(FILM, name, LAYOUT) ?
     [Dict{String, Any}("part" => name)]
 
 """
-    keycoverage() -> Vector{(part, path)}
+    keycoverage(; parts = editorparts()) -> Vector{(part, path)}
 
-Every key path of every part that none of the part's clips stores as a native
-property track.
+Every key path of each of `parts` that none of the part's clips stores as a
+native property track.
 """
-function keycoverage()
+function keycoverage(; parts = editorparts())
     data = FILM.data()
     unstored = Tuple{String, String}[]
-    for name in editorparts()
+    for name in parts
         anim = authored(FILM.parts[name], FILM, data)
         builts = [SF.buildpart(FILM, LAYOUT, args) for args in layerargs(name)]
         for (path, keys) in anim
@@ -73,15 +73,15 @@ labeltext(p::Union{SF.Callout, SF.Caption}) = only(q for q in only(q for q in p.
 labeltext(_) = nothing
 
 """
-    offframe(; step = 0.5) -> Vector{(part, t, label, lo, hi)}
+    offframe(; step = 0.5, parts = editorparts()) -> Vector{(part, t, label, lo, hi)}
 
-Every callout or caption of every part that shows (faded in more than 5 %) at
+Every callout or caption of each of `parts` that shows (faded in more than 5 %) at
 least partly outside the frame, `step` seconds apart: its backing's corners in
 layout pixels. A label wholly outside is not seen; one cut by the edge is.
 """
-function offframe(; step = 0.5)
+function offframe(; step = 0.5, parts = editorparts())
     found = NamedTuple[]
-    shownlabels(; step) do name, t, boxes
+    shownlabels(; step, parts) do name, t, boxes
         for (label, lo, hi) in boxes
             seen = all(hi .> 0) && all(lo .< Vec2f(LAYOUT))
             inside = all(lo .>= -1) && all(hi .<= Vec2f(LAYOUT) .+ 1)
@@ -91,10 +91,10 @@ function offframe(; step = 0.5)
     return found
 end
 
-"Each part's shown labels (callouts and captions faded in more than 5 %) every `step` seconds, as `(part, t, boxes)`, a box `(name, lo, hi)` in layout pixels with its backing."
-function shownlabels(f; step = 0.5)
+"Each of `parts`' shown labels (callouts and captions faded in more than 5 %) every `step` seconds, as `(part, t, boxes)`, a box `(name, lo, hi)` in layout pixels with its backing."
+function shownlabels(f; step = 0.5, parts = editorparts())
     data = FILM.data()
-    for name in editorparts()
+    for name in parts
         part = FILM.parts[name]
         built = part.build(data; size = LAYOUT)
         anim = authored(part, FILM, data)
@@ -110,14 +110,14 @@ function shownlabels(f; step = 0.5)
 end
 
 """
-    clashes(; step = 0.5, least = 1.0) -> Vector{(part, a, b, from, to)}
+    clashes(; step = 0.5, least = 1.0, parts = editorparts()) -> Vector{(part, a, b, from, to)}
 
-Every two labels of a part that overlap on screen for at least `least` seconds
+Every two labels of one of `parts` that overlap on screen for at least `least` seconds
 (a caption fading out where the next fades in overlaps for less).
 """
-function clashes(; step = 0.5, least = 1.0)
+function clashes(; step = 0.5, least = 1.0, parts = editorparts())
     times = Dict{Tuple{String, Symbol, Symbol}, Vector{Float64}}()
-    shownlabels(; step) do name, t, boxes
+    shownlabels(; step, parts) do name, t, boxes
         for i in eachindex(boxes), j in i+1:length(boxes)
             (a, alo, ahi), (b, blo, bhi) = boxes[i], boxes[j]
             all(alo .< bhi) && all(blo .< ahi) && push!(get!(times, (name, a, b), Float64[]), t)

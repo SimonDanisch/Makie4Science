@@ -30,12 +30,14 @@ struct Shot
 end
 
 """
-    Montage(name, lines, shots; tail = 1.2, maxspeed = 1.5)
+    Montage(name, lines, shots; tail = 1.2, maxspeed = 1.5, speed = nothing)
 
 A narrated stretch of film shown with shots: `shots` are `(shot, from, to)`,
 seconds of each [`Shot`](@ref), played one after the other, sped up (by at most
 `maxspeed`) or slowed down together to last as long as the narration `lines`
-and `tail` seconds after it, and cut there if they still run longer.
+and `tail` seconds after it, and cut there if they still run longer. A fixed
+`speed` plays them at that speed instead, cut where the narration ends: a
+shortened narration that keeps the pictures of a cut already rendered.
 """
 struct Montage
     name::String
@@ -43,10 +45,11 @@ struct Montage
     shots::Vector{Tuple{String,Float32,Float32}}
     tail::Float32
     maxspeed::Float32
+    speed::Union{Nothing,Float32}
 end
-Montage(name, lines, shots; tail = 1.2f0, maxspeed = 1.5f0) =
+Montage(name, lines, shots; tail = 1.2f0, maxspeed = 1.5f0, speed = nothing) =
     Montage(name, collect(String, lines), [(String(s), Float32(a), Float32(b)) for (s, a, b) in shots],
-            Float32(tail), Float32(maxspeed))
+            Float32(tail), Float32(maxspeed), speed === nothing ? nothing : Float32(speed))
 
 """
     fit(montage, seconds) -> (speed, length)
@@ -56,9 +59,12 @@ tail, and how long it then runs (seconds).
 """
 function fit(m::Montage, seconds)
     target = Float32(seconds) + m.tail
-    total = sum(b - a for (_, a, b) in m.shots)
-    return min(total / target, m.maxspeed), target
+    return playspeed(m.speed, sum(b - a for (_, a, b) in m.shots) / target, m.maxspeed), target
 end
+
+"The speed a montage plays at: fitted to its narration (at most `maxspeed`), or the one it was given."
+playspeed(::Nothing, fitted, maxspeed) = min(fitted, maxspeed)
+playspeed(speed::Float32, fitted, maxspeed) = speed
 
 """
     Film(mod, parts, data, timing, voice, cut)

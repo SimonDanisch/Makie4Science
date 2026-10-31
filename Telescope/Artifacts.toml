@@ -7,9 +7,9 @@ lazy = true
     url = "https://github.com/SimonDanisch/Makie4Science/releases/download/telescope-v1/telescope-fields.tar.gz"
 
 [telescope-narration]
-git-tree-sha1 = "2acd143d0de01e21a08f963023cd4e2f6e880240"
+git-tree-sha1 = "d4d0815aa41f24054996b9564a0655c0b2ad8f1e"
 lazy = true
 
     [[telescope-narration.download]]
-    sha256 = "b45e1e3e362a3728c1e3beab21cf391adb7aec179fb63b9e0a2b7d25fb8fdf5c"
-    url = "https://github.com/SimonDanisch/Makie4Science/releases/download/telescope-v1/telescope-narration-2acd143d0de0.tar.gz"
+    sha256 = "95362bf82a714babfb1a58b961909af534ecd2d4de7df0c7da4bfe9e337f56ec"
+    url = "https://github.com/SimonDanisch/Makie4Science/releases/download/telescope-v1/telescope-narration-d4d0815aa41f.tar.gz"

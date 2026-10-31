@@ -73,4 +73,6 @@ function main(names = first.(ARTIFACTS))
     println("  gh release upload $TAG --repo $REPO ", join(made, " "))
 end
 
-main(isempty(ARGS) ? first.(ARTIFACTS) : ARGS)
+if abspath(PROGRAM_FILE) == @__FILE__
+    main(isempty(ARGS) ? first.(ARTIFACTS) : ARGS)
+end

@@ -59,79 +59,30 @@ keys_star(d::TelescopeData) = animation(
 
 shot_star() = Shot("star", 60, build_star, keys_star)
 
-# ── reading the direction: two windows onto two stars' wavefronts ───────────
+# ── window frames: the direction beat's (act 1) and the window again (act 2) ──
 
 """Brushed gold: warm and soft, between bright aluminium (which flickered against the crests) and black (dead)."""
 const GOLD = Hikari.Conductor(eta = (0.143f0, 0.374f0, 1.442f0), k = (3.983f0, 2.385f0, 1.603f0), roughness = 0.3)
 
 """
-A window frame lying on the plane around `r` (world units): four bars `w`
-wide and `h` high, one mesh named `name`.
+A window frame lying on the plane around `r` (world units, or an Observable
+of them for a window that changes size): four bars `w` wide and `h` high, one
+mesh named `name`.
 """
-function window_frame!(sc, r::Rect2f; name, w = 0.45f0, h = 0.3f0, visible = true, material = GOLD)
+window_frame!(sc, r::Rect2f; name, w = 0.45f0, h = 0.3f0, visible = true, material = GOLD) =
+    mesh!(sc, framebars(r, w, h); material, visible, name)
+window_frame!(sc, r::Observable; name, w = 0.45f0, h = 0.3f0, visible = true, material = GOLD) =
+    mesh!(sc, lift(r -> framebars(r, w, h), r); material, visible, name)
+
+"""The four bars of a frame around `r`, `w` wide and `h` high, as one mesh."""
+function framebars(r::Rect2f, w, h)
     lo, hi = minimum(r), maximum(r)
     bars = (Rect3f(Vec3f(lo[1] - w, lo[2] - w, 0), Vec3f(hi[1] - lo[1] + 2w, w, h)),
             Rect3f(Vec3f(lo[1] - w, hi[2], 0), Vec3f(hi[1] - lo[1] + 2w, w, h)),
             Rect3f(Vec3f(lo[1] - w, lo[2], 0), Vec3f(w, hi[2] - lo[2], h)),
             Rect3f(Vec3f(hi[1], lo[2], 0), Vec3f(w, hi[2] - lo[2], h)))
-    return mesh!(sc, merge([normal_mesh(b) for b in bars]); material, visible, name)
+    return merge([normal_mesh(b) for b in bars])
 end
-
-"""
-The window shot's light at `time` (periods): two stars' crests, faint, and in
-each window shown the one crest of each star nearest its middle, bright.
-"""
-struct WindowLight
-    g::Grid
-    δ::Float32
-    λ::Float32
-    narrow::Rect2f
-    wide::Rect2f
-end
-
-function (l::WindowLight)(time, narrow, wide, faint)
-    windows = Rect2f[w for (w, shown) in ((l.narrow, narrow), (l.wide, wide)) if shown]
-    tex = window_glow(l.g, time, l.δ; λ = l.λ, windows, faint, width = 0.05f0, base = (0.012f0, 0.013f0, 0.02f0))
-    return wave_material(toimage(tex); scale = 2f0)
-end
-
-"""The window shot's camera, straight down over its middle, north up, `height` above the plane."""
-window_pose(height) = Pose(Vec3f(-1, 0.5, height), Vec3f(-1, 0.5, 0); fov = 40)
-
-function build_window(d::TelescopeData; size = (1280, 720), λ = 1.2f0, beat = 12f0, light = 0.1f0)
-    ins = Inspector()
-    time, faint = Observable(0f0), Observable(0.45f0)
-    narrow_on, wide_on = Observable(false), Observable(false)
-    δ = asin(λ / beat)                    # one wavelength of slip across the wide window
-    # larger than the frame, which looks straight down: no edge in view
-    g = Grid(Point2f(-24, -14), Point2f(22, 24), 24 / λ)
-    narrow = Rect2f(-9, -1.5f0, 3, 3)
-    wide = Rect2f(0, -6, beat, beat)      # from half a wavelength slipped, through in step, to half the other way
-    sc = Scene(; size, backgroundcolor = :black, lights = [AmbientLight(RGBf(0.02, 0.02, 0.02))])
-    cam3d!(sc; center = false)
-    # straight down, north up: looking down at a slant made the straight-ahead
-    # crests converge in perspective, and the whole pattern seemed to lean
-    pose = window_pose(26f0)
-    update_cam!(sc, pose.eye, pose.lookat, Vec3f(0, 1, 0))
-    cameracontrols(sc).fov[] = pose.fov
-    update_cam!(sc, cameracontrols(sc))
-    # out in space: no floor, only light for the frames, from high above the camera
-    softbox!(sc, Point3f(-4, -7, 45), 24, 8; Le = light .* (160, 160, 160), name = :softbox_key)
-    softbox!(sc, Point3f(8, 10, 40), 16, 6; Le = light .* (100, 100, 112), name = :softbox_fill)
-    plane = mesh!(sc, sheet(bounds(g), 0.01f0); name = :plane, inspectable = false,
-                  material = lift(WindowLight(g, δ, λ, narrow, wide), time, narrow_on, wide_on, faint))
-    solid!(ins, "Light in the plane", plane)
-    solid!(ins, "Narrow window", window_frame!(sc, narrow; name = :frame_narrow, visible = narrow_on))
-    solid!(ins, "Wide window", window_frame!(sc, wide; name = :frame_wide, visible = wide_on))
-    return (scene = sc, args = (; time, faint, narrow = narrow_on, wide = wide_on), objects = ins.objects)
-end
-
-keys_window(d::TelescopeData) = animation(
-    posekeys([0 => window_pose(26f0), 40 => window_pose(24f0)]),
-    Dict("args.time" => ramp(0, 40, 0, 1.2f0 * 40), "args.narrow" => switch(8, false, true),
-         "args.wide" => switch(18, false, true), "args.faint" => ramp(8, 10, 0.45f0, 0.18f0; ease = :smooth)))
-
-shot_window() = Shot("window", 40, build_window, keys_window)
 
 # ── from a row of pixels to the picture: the rings ───────────────────────────
 
@@ -268,13 +219,12 @@ montage_star() = Montage("scene_02", [
     "Light starts at a star. A star sends light out in every direction at once: it spreads as a [sphere](+2), crest after crest, growing without end. Wherever you are, if you can see the star, you're standing inside that sphere. Its light is right there, reaching you.",
 ], [("star", 0, 30)])
 
+# The approved cut played the star shot at 1.2620486 (30 s over its first
+# narration); the narration since lost its last sentence, which the direction
+# beat now explains, and the shot plays on at that speed, cut where it ends.
 montage_sky() = Montage("scene_03", [
-    "Add a second star, and its spheres fill the same space. Every patch of space, however small, has light from [both](+2) stars going through it, from every star you can see from there. So every little window onto space holds the visible sky. [But](-1) letting the light in [isn't](+2) the same as telling its directions apart. A smaller opening makes nearby directions harder to distinguish.",
-], [("star", 30, 60)])
-
-montage_direction() = Montage("scene_04", [
-    "Far from the stars, a small piece of each sphere is almost perfectly flat. The [direction](+2) to a star is written in the [tilt](+2) of these flat wavefronts. Two stars close together in the sky give two sets of wavefronts with almost the same tilt. Through a [narrow](+2) window you can hardly tell them apart: across the window, one wave slips behind the other by only a fraction of a wavelength. Through a [wide](+2) window the same small tilt adds up. At the far edge one wave has slipped by roughly a whole wavelength across the window. The wider the window, the finer the difference in direction it can tell apart. Remember that: [one](+2) wavelength across the window.",
-], [("window", 0, 40)])
+    "Add a second star, and its spheres fill the same space. Every patch of space, however small, has light from [both](+2) stars going through it, from every star you can see from there. So every little window onto space holds the visible sky. [But](-1) letting the light in [isn't](+2) the same as telling its directions apart.",
+], [("star", 30, 60)]; speed = 1.2620486f0)
 
 montage_detail() = Montage("scene_10", [
     "Point the telescope at two stars close together. Each star makes its own spot; here each has its own colour. With the [big](+2) lens the spots stay apart. With the [small](+2) one they merge into a single blob, and we can't tell there are two. That is all low resolution is: every point of the scene smeared into a little spot, and neighbouring spots running into each other. It's the rule from the window again: two stars come apart when, across the lens, their wavefronts drift one wavelength apart. The smallest angle a telescope can split is about the wavelength divided by the opening.",

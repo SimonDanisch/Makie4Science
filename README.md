@@ -66,6 +66,19 @@ says its part's current lines.
 
 ## Data
 
+The Telescope render cache retains graded picture PNGs and transparent label
+PNGs separately. `Telescope/tools/render_farm.jl` uses VideoEditor's `hdr=false`
+option to omit the large HDR/auxiliary buffers, adopts the returned track layers
+into the saved project and exports through the normal compositor. Label edits
+and translations reuse the pictures without ray tracing. Create language
+versions by editing and saving the existing project, preserving picture clip
+IDs and source clocks, rather than calling `filmsequence` again. Save As shares
+the immutable cached picture files where the filesystem supports hard links.
+
+The historical Telescope jobs made with `planes=false` contain only finished
+composites. They cannot provide clean picture layers for translated labels;
+those missing layers have to be rendered once with the corrected retention.
+
 Simulations and recordings are Pkg artifacts, never files in the repository.
 A film's `tools/make_artifacts.jl` computes them into its `gen/` folder (not
 tracked), packs them and binds them in the film's `Artifacts.toml`, lazily, to

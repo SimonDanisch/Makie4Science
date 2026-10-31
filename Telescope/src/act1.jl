@@ -64,6 +64,132 @@ beat_wave() = Beat("b00_wave", [
     "Real light has about two thousand crests in a single millimetre. We draw them thousands of times [farther](+2) apart, so you can see them.",
 ], build_wave, keys_wave)
 
+# ── B0b: telling two directions apart ────────────────────────────────────────
+# After the star montages, two points and only two: the farther away two stars
+# are, the smaller the angle between their crests and the harder they are to
+# tell apart; a wider window shows longer pieces of the crests, along which even
+# a small angle opens a gap. Shown on one crossing pair of crests and one window.
+
+"""
+The direction beat's wavelength (world units), where its two bright crests
+cross, the window's side there, narrow and wide, and the angle arc's radius.
+"""
+const DIRECTION = (λ = 1.2f0, crossing = Point2f(-1, 0.5), narrow = 3f0, wide = 12f0, arc = 5f0)
+
+"""The angle between the stars as the beat opens, and the one it shrinks to (radians): small, yet clear across the wide window."""
+direction_angles() = (deg2rad(20f0), asin(DIRECTION.λ / DIRECTION.wide))
+
+"""The beat's camera, straight down over the crossing, north up, `height` above the plane."""
+direction_pose(height) = Pose(Vec3f(DIRECTION.crossing..., height), Vec3f(DIRECTION.crossing..., 0); fov = 40)
+
+"""The window around the crossing, `open` of the way from narrow (0) to wide (1)."""
+function direction_window(open)
+    side = DIRECTION.narrow + Float32(open) * (DIRECTION.wide - DIRECTION.narrow)
+    return Rect2f(DIRECTION.crossing .- side / 2, Vec2f(side, side))
+end
+
+"""
+The crests in the plane: the warm star's straight ahead, curved around a star
+`bend` (1 / its distance) away, the blue star's tilted by `angle` and faded to
+`second`, all faint (`faint`). The two crossing at the crossing bright inside
+the window once it is `shown`, and `outside` as bright everywhere else.
+"""
+struct DirectionLight
+    g::Grid
+end
+
+function (l::DirectionLight)(angle, second, bend, shown, open, outside, faint)
+    window = shown ? direction_window(open) : nothing
+    # bright enough to stand out, not so bright that the blue crest burns to white
+    tex = window_glow(l.g, 0f0, angle; λ = DIRECTION.λ, origin = DIRECTION.crossing, window, outside, bend, faint,
+                      gain = 1f0, width = 0.05f0, base = (0.012f0, 0.013f0, 0.02f0), tints = (SUNLIGHT, second .* SECONDARY_LIGHT))
+    return wave_material(toimage(tex); scale = 2f0)
+end
+
+"""The arc at the crossing between the warm crest (straight up) and the blue one, `angle` from it."""
+anglearc(angle) = [Point3f((DIRECTION.crossing + DIRECTION.arc * Vec2f(cos(t), sin(t)))..., 0.05f0)
+                   for t in range(Float32(π) / 2, Float32(π) / 2 + angle; length = 40)]
+
+"""
+The distance diagram (pixels): two stars `apart` from each other, seen from
+`us`. Drawn at the beat's angle, they stand as far away as that angle puts
+them, so it shows why the angle shrinks.
+"""
+const DISTANCE_INSET = (us = Point2f(400, 612), apart = 30f0, box = Rect2f(50, 548, 400, 140))
+
+"""Where the diagram's two stars stand for the angle `angle` at `us`."""
+function inset_stars(angle)
+    d = DISTANCE_INSET.apart / 2 / tan(angle / 2)
+    us = DISTANCE_INSET.us
+    return (us + Vec2f(-d, DISTANCE_INSET.apart / 2), us + Vec2f(-d, -DISTANCE_INSET.apart / 2))
+end
+
+"""The distance diagram's plots, which fade together."""
+const INSET_PLOTS = (:inset_back, :inset_sight_warm, :inset_sight_blue, :inset_dots, :inset_us)
+
+function build_direction(d::TelescopeData; size = (1280, 720), light = 0.1f0)
+    ins = Inspector()
+    angle, second, bend = Observable(direction_angles()[1]), Observable(0f0), Observable(0f0)
+    shown, open, outside, faint = Observable(false), Observable(0f0), Observable(0f0), Observable(0.35f0)
+    # larger than the frame, which looks straight down: no edge in view
+    g = Grid(Point2f(-24, -14), Point2f(22, 24), 24 / DIRECTION.λ)
+    pose = direction_pose(26f0)
+    fig, sc, ov = frame3d(pose; size, lights = [AmbientLight(RGBf(0.02, 0.02, 0.02))])
+    # straight down, north up: looking down at a slant made the straight-ahead
+    # crests converge in perspective, and the whole pattern seemed to lean
+    update_cam!(sc, pose.eye, pose.lookat, Vec3f(0, 1, 0))
+    cameracontrols(sc).fov[] = pose.fov
+    update_cam!(sc, cameracontrols(sc))
+    # out in space: no floor, only light for the window frame, from high above the camera
+    softbox!(sc, Point3f(-4, -7, 45), 24, 8; Le = light .* (160, 160, 160), name = :softbox_key)
+    softbox!(sc, Point3f(8, 10, 40), 16, 6; Le = light .* (100, 100, 112), name = :softbox_fill)
+    solid!(ins, "Light in the plane", mesh!(sc, sheet(bounds(g), 0.01f0); name = :plane, inspectable = false,
+        material = lift(DirectionLight(g), angle, second, bend, shown, open, outside, faint)))
+    solid!(ins, "The window", window_frame!(sc, lift(direction_window, open); name = :frame, visible = shown))
+    object!(ins, "The angle between them", projectedlines!(ov, lift(anglearc, angle); color = :white, linewidth = 3,
+        alpha = 0, name = :angle_arc, viewof(sc)...))
+    # why the angle shrinks: the same two stars, farther away
+    stars = lift(inset_stars, angle)
+    us = DISTANCE_INSET.us
+    object!(ins, "Distance diagram",
+        poly!(ov, DISTANCE_INSET.box; color = (:black, 0.55), alpha = 0, name = :inset_back),
+        lines!(ov, lift(s -> [s[1], us], stars); color = rgbf(SUNLIGHT), linewidth = 2, alpha = 0, name = :inset_sight_warm),
+        lines!(ov, lift(s -> [s[2], us], stars); color = rgbf(SECONDARY_LIGHT), linewidth = 2, alpha = 0,
+               name = :inset_sight_blue),
+        scatter!(ov, lift(s -> [s[1], s[2], us], stars); color = [rgbf(SUNLIGHT), rgbf(SECONDARY_LIGHT), RGBf(1, 1, 1)],
+                 markersize = [14, 14, 10], alpha = 0, name = :inset_dots),
+        text!(ov, us + Vec2f(14, 0); text = "us", align = (:left, :center), fontsize = 20, color = :white, alpha = 0,
+              name = :inset_us))
+    return (scene = fig.scene, args = (; angle, second, bend, shown, open, outside, faint), objects = ins.objects)
+end
+
+function keys_direction(d::TelescopeData, tm::Timing)
+    a0, a1 = direction_angles()
+    s, e = tm.starts, tm.ends
+    # the window comes in on "narrow", and the crests outside it dim
+    windowed = appear(tm, 4; delay = 0.5f0)
+    inset = Dict(string(n, ".alpha") => appear(tm, 3) * (1f0 - appear(tm, 4)) for n in INSET_PLOTS)
+    return animation(
+        posekeys([0 => direction_pose(26f0), tm.duration => direction_pose(24f0)]),
+        merge(inset, Dict(
+            "args.bend" => ramp(s[1], e[1], 1 / 25f0, 0f0; ease = :smooth),
+            "args.outside" => appear(tm, 1; delay = 0.5f0) * (1f0 - windowed),
+            "args.second" => appear(tm, 2; d = 1.2f0),
+            "args.angle" => ramp(s[3] + 0.4f0, e[3], a0, a1; ease = :smooth),
+            "args.shown" => switch(s[4] + 0.5f0, false, true),
+            "args.faint" => ramp(s[4] + 0.5f0, s[4] + 1.7f0, 0.35f0, 0.15f0; ease = :smooth),
+            "args.open" => ramp(s[5] + 0.3f0, s[5] + 3.3f0, 0f0, 1f0; ease = :smooth),
+            "angle_arc.alpha" => appear(tm, 2; delay = 1.5f0) * (1f0 - windowed))))
+end
+
+beat_direction() = Beat("b00b_direction", [
+    "Far from a star, its round crests have flattened into straight, parallel lines.",
+    "A second star's crests cross them at an angle: the angle between the two stars.",
+    "The [farther](+2) away the stars are, the smaller that angle gets, and the harder they are to tell apart.",
+    "Through a [narrow](+2) window we only see short pieces of the crests, and there the two look the same.",
+    "A [wider](+2) window shows longer pieces. Along them, even a small angle opens a clear gap, and the two directions come apart.",
+], build_direction, keys_direction)
+
 # ── B1: the telescope, cut open ──────────────────────────────────────────────
 
 """
