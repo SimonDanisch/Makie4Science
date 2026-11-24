@@ -20,7 +20,7 @@ keep=Set{Tuple{UInt64,Int}}()
 @testset "transfer parent is lightweight and policy excludes Bosgame" begin
     @test !isdefined(RecordingLAN,:VideoEditor)
     @test !ScienceFarmPolicy.allowed("Bosgame")
-    @test !ScienceFarmPolicy.allowed("sim-bosgame (192.168.178.59)")
+    @test !ScienceFarmPolicy.allowed("sim-bosgame (lan host)")
     @test ScienceFarmPolicy.allowed("Desktop")
 end
 @testset "producer queue is bounded and cancellation stops it" begin
