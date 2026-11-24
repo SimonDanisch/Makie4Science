@@ -11,6 +11,7 @@ films share.
 | `ScienceFilms/` | The film toolkit: colour language, materials, framing and studio, keys placed by narration timing, callouts and captions, and the `Film` that VideoEditor assembles into clips. No physics. |
 | `WaveOptics/` | Light and lenses: optical systems, a GPU scalar wave solver, ray tracing, analytic fields, 3D instrument models and the glowing cutaways that show them. |
 | `Telescope/` | The film "What makes a picture sharp?": its data, its scenes and keys, and the tool that builds its artifacts. |
+| `Blackhole/` | The film "How do you photograph a black hole?": its beats, project builder, farm and review tools. Not yet a package like `Telescope/`; its assets and data are not in git. |
 | `tools/` | Helpers for porting films from other projects. |
 
 A package that a second film could use belongs in its own folder at the top.

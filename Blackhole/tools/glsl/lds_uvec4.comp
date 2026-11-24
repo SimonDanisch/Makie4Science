@@ -1,0 +1,33 @@
+#version 460
+#extension GL_KHR_cooperative_matrix : require
+#extension GL_KHR_memory_scope_semantics : require
+#extension GL_EXT_shader_explicit_arithmetic_types : require
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_buffer_reference_uvec2 : require
+layout(local_size_x = 128) in;
+layout(buffer_reference, std430, buffer_reference_align = 16) buffer Vecs { uvec4 v[]; };
+layout(buffer_reference, std430, buffer_reference_align = 16) buffer Outs { float o[]; };
+layout(push_constant) uniform PC { uint64_t src; uint64_t dst; } pc;
+const uint W = 8;            // halves per element
+const uint LD = 40 / W;       // 32 + 8 padding, in elements
+shared uvec4 sA[LD * 64];
+shared uvec4 sB[LD * 256];
+void main() {
+    uint t = gl_LocalInvocationID.x;
+    Vecs src = Vecs(pc.src);
+    for (uint i = t; i < LD * 64; i += 128) sA[i] = src.v[i];
+    for (uint i = t; i < LD * 256; i += 128) sB[i] = src.v[i + 4096];
+    barrier();
+    uint s = t / 32;
+    coopmat<float, gl_ScopeSubgroup, 16, 16, gl_MatrixUseAccumulator> c = coopmat<float, gl_ScopeSubgroup, 16, 16, gl_MatrixUseAccumulator>(0.0);
+    for (uint u = 0; u < 2; ++u) {
+        coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseA> a;
+        coopMatLoad(a, sA, (s * 16) * LD + u * 16 / W, LD, gl_CooperativeMatrixLayoutRowMajor);
+        for (uint j = 0; j < 4; ++j) {
+            coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseB> b;
+            coopMatLoad(b, sB, (j * 16) * LD + u * 16 / W, LD, gl_CooperativeMatrixLayoutColumnMajor);
+            c = coopMatMulAdd(a, b, c);
+        }
+    }
+    coopMatStore(c, Outs(pc.dst).o, s * 256, 16, gl_CooperativeMatrixLayoutColumnMajor);
+}

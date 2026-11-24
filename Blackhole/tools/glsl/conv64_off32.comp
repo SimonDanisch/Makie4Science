@@ -1,0 +1,84 @@
+#version 460
+// Hand-written GLSL twin of OIDNRunner's conv3x3_64x256_2x4! for the plain
+// 64 -> 64 layer at 1920x1088: same tiling, staging, layouts and epilogue.
+// Variant: global loads as base + uint64(offset32), the form Mesa folds into
+// a scalar base plus 32-bit offset (ac_nir_lower_global_access).
+#extension GL_KHR_cooperative_matrix : require
+#extension GL_KHR_memory_scope_semantics : require
+#extension GL_EXT_shader_explicit_arithmetic_types : require
+#extension GL_EXT_buffer_reference : require
+layout(local_size_x = 256) in;
+layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer U4 { uvec4 v[]; };
+layout(buffer_reference, std430, buffer_reference_align = 4) readonly buffer F32 { float v[]; };
+layout(buffer_reference, std430, buffer_reference_align = 16) buffer H16 { float16_t v[]; };
+layout(buffer_reference, std430, buffer_reference_align = 8) readonly buffer Args { uint64_t x; uint64_t w; uint64_t b; uint64_t y; };
+layout(push_constant) uniform PC { uint64_t args; } pc;
+
+const int W = 1920, H = 1088, C0 = 64, CO = 64, K = 576;
+const int BO = 64, BP = 256, WO = 2, WP = 4, TO = 2, TP = 4, KG = 4, RS = 64, BV = 4, LDV = 5;
+shared uvec4 sA[LDV * BO];
+shared uvec4 sB[LDV * BP];
+
+uvec4 load16(uint64_t base, uint i) { return U4(base + uint64_t(i * 16u)).v[0]; }
+uvec4 gather(uint64_t X, int x, int y, int k) {
+    int tap = k / C0; int c = k - tap * C0;
+    int ky = tap / 3; int kx = tap - ky * 3;
+    int sx = x + kx - 1, sy = y + ky - 1;
+    bool ok = tap < 9 && sx >= 0 && sx < W && sy >= 0 && sy < H;
+    sx = ok ? sx : 0; sy = ok ? sy : 0;
+    int i = c + C0 * (sx + W * sy);
+    uvec4 v = load16(X, uint(i) / 8u);
+    return ok ? v : uvec4(0);
+}
+
+void main() {
+    Args a = Args(pc.args);
+    uint64_t X = a.x; uint64_t Wt = a.w; F32 bias = F32(a.b); H16 Y = H16(a.y);
+    int tid = int(gl_LocalInvocationID.x), blk = int(gl_WorkGroupID.x);
+    int nO = CO / BO;
+    int o0 = (blk % nO) * BO, p0 = (blk / nO) * BP;
+    int s = tid / 32;
+    int wo = (s % WO) * (BO / WO), wp = (s / WO) * (BP / WP);
+    int kq = tid % KG, pp = tid / KG;
+    int M = W * H;
+    int xr[BV], yr[BV];
+    for (int r = 0; r < BV; ++r) {
+        int P = p0 + min(pp + RS * r, BP - 1);
+        int y = P / W; xr[r] = P - y * W; yr[r] = P < M ? y : -2;
+    }
+    int wa = (kq * 8 + (o0 + pp) * K) / 8;
+    coopmat<float, gl_ScopeSubgroup, 16, 16, gl_MatrixUseAccumulator> c[TO][TP];
+    for (int i = 0; i < TO; ++i) for (int j = 0; j < TP; ++j)
+        coopMatLoad(c[i][j], bias.v, o0 + wo + 16 * i, 0, gl_CooperativeMatrixLayoutColumnMajor);
+    uvec4 bq[BV];
+    for (int r = 0; r < BV; ++r) bq[r] = gather(X, xr[r], yr[r], kq * 8);
+    uvec4 aq = load16(Wt, uint(wa));
+    const int nk = K / 32;
+    for (int kb = 0; kb < nk; ++kb) {
+        sA[kq + pp * LDV] = aq;
+        for (int r = 0; r < BV; ++r) sB[kq + (pp + RS * r) * LDV] = bq[r];
+        barrier();
+        if (kb + 1 < nk) {
+            int k = (kb + 1) * 32 + kq * 8;
+            for (int r = 0; r < BV; ++r) bq[r] = gather(X, xr[r], yr[r], k);
+            aq = load16(Wt, uint(wa + (kb + 1) * 4));
+        }
+        for (int u = 0; u < 2; ++u) {
+            coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseA> am[TO];
+            for (int i = 0; i < TO; ++i)
+                coopMatLoad(am[i], sA, u * 2 + (wo + 16 * i) * LDV, LDV, gl_CooperativeMatrixLayoutRowMajor);
+            for (int j = 0; j < TP; ++j) {
+                coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseB> bm;
+                coopMatLoad(bm, sB, u * 2 + (wp + 16 * j) * LDV, LDV, gl_CooperativeMatrixLayoutColumnMajor);
+                for (int i = 0; i < TO; ++i) c[i][j] = coopMatMulAdd(am[i], bm, c[i][j]);
+            }
+        }
+        barrier();
+    }
+    for (int i = 0; i < TO; ++i) for (int j = 0; j < TP; ++j) {
+        for (int e = 0; e < c[i][j].length(); ++e) c[i][j][e] = max(c[i][j][e], 0.0);
+        coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseAccumulator> h =
+            coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseAccumulator>(c[i][j]);
+        coopMatStore(h, Y.v, o0 + wo + 16 * i + (p0 + wp + 16 * j) * CO, CO, gl_CooperativeMatrixLayoutColumnMajor);
+    }
+}

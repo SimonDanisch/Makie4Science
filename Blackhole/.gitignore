@@ -1,0 +1,22 @@
+# outputs and big local material: renders, the keynote, downloaded assets, voice takes, saved projects
+renders/
+keynote/
+assets/downloads/
+assets/grmhd/*.h5
+assets/grmhd/*.h5.part
+assets/processed/
+assets/tools/
+voice/
+voice_de/
+voice_v6/
+voice_continuous_*/
+voice_revision2_*/
+# Download the 16k EXR from NASA SVS Deep Star Maps 2020 (4851).
+assets/starmap_2020_16k.exr
+*.videoedit.frames/
+*.videoedit
+.bonitoAgents/
+__pycache__/
+# the film's assets and data live outside git (Bosgame /data/Renders/Programmieren/Science4Makie/BlackholeImage)
+assets/
+data/

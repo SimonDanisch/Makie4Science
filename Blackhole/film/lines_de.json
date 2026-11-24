@@ -1,0 +1,89 @@
+{
+  "a0_first_picture": [
+    "Zweitausendneunzehn zeigten Astronomen etwas, das noch niemand gesehen hatte: ein Bild von einem schwarzen Loch. Ein unscharfer orangefarbener Ring mit dunkler Mitte.",
+    "Dafür brauchten sie ein Teleskop so groß wie die ganze Erde und ausgeklügelte Computerprogramme. Dieses Video zeigt, wie das funktioniert."
+  ],
+  "a1_black_hole": [
+    "In einem schwarzen Loch ist die Schwerkraft so stark, dass nichts entkommt. Nicht einmal Licht. Seine Grenze heißt Ereignishorizont.",
+    "Darum kreist Gas in einer flachen Scheibe. Es ist so heiß, dass es leuchtet. Würde Licht geradeaus fliegen, sähe das so aus.",
+    "Doch die Schwerkraft krümmt das Licht. Licht von der Rückseite der Scheibe wird über und unter dem schwarzen Loch herumgelenkt. Deshalb sehen wir auch die Rückseite.",
+    "Licht, das zu nahe kommt, fällt hinein. So entsteht ein dunkler Schatten, mehr als doppelt so breit wie das schwarze Loch selbst. Ein schmaler heller Ring umgibt ihn. Dieses Licht hat das Loch umrundet, bevor es entkam. Das ist der Photonenring.",
+    "Das Gas rast mit fast halber Lichtgeschwindigkeit um das Loch. Die Seite, die auf uns zukommt, erscheint heller. Die andere Seite erscheint dunkler.",
+    "Das schwarze Loch in M siebenundachtzig sehen wir fast von oben. Ein leuchtender Ring mit dunkler Mitte."
+  ],
+  "a2_two_numbers": [
+    "Forscher mögen schwarze Löcher, weil sie überraschend einfach sind. Eine Katze braucht eine lange Beschreibung: Farbe, Größe, Gewicht, Persönlichkeit und Lieblingsfutter.",
+    "Für ein schwarzes Loch reichen zwei Zahlen: seine Masse und seine Drehung. Sein Bild hilft uns, beides zu untersuchen."
+  ],
+  "a3_tiny": [
+    "Das schwarze Loch in M siebenundachtzig ist riesig. Sein Schatten ist größer als unser ganzes Sonnensystem. Aber es ist fünfundfünfzig Millionen Lichtjahre entfernt.",
+    "Von der Erde aus erscheint es so winzig wie eine Orange auf dem Mond."
+  ],
+  "a4_giant_telescope": [
+    "Erinnert ihr euch an unser Video über Teleskope? Wie kleine Details ein Teleskop erkennt, hängt von zwei Dingen ab: der Wellenlänge des Lichts und der Größe seiner Öffnung.",
+    "Diese schwarzen Löcher beobachten wir mit Radiowellen, etwa einen Millimeter lang. Um eine Orange auf dem Mond zu erkennen, müsste die Öffnung ungefähr so groß wie die Erde sein."
+  ],
+  "a5_why_radio": [
+    "Aber sichtbares Licht hat viel kürzere Wellen. Da würde ein Teleskop von wenigen Kilometern reichen. Warum nehmen wir trotzdem Radiowellen?",
+    "Kein einzelnes Teleskop ist groß genug. Wir müssen viele zu einem riesigen Teleskop verbinden. Das klappt nur, wenn jedes die Lichtwelle selbst aufzeichnet, jede einzelne Schwingung. Später setzt ein Computer die Aufnahmen zusammen.",
+    "Elektronik kann Radiowellen folgen und sie aufzeichnen. Sichtbares Licht schwingt fünfhundert Billionen Mal pro Sekunde. Das ist für jede Maschine viel zu schnell.",
+    "Auch die Wellenlänge ist sorgfältig gewählt. Bei eins Komma drei Millimetern wird das heiße Gas durchsichtig, als würde Nebel verschwinden. Und das Licht kommt noch durch unsere Luft, wenn das Teleskop hoch auf einem trockenen Berg steht."
+  ],
+  "b0_stations": [
+    "Deshalb richten Astronomen Radioteleskope weltweit gleichzeitig auf dasselbe schwarze Loch: auf Hawaii, in Arizona, Mexiko, Chile, Spanien, Frankreich und Grönland.",
+    "Zusammen wirken sie wie Teile einer riesigen Antenne. Das ist das Event Horizon Telescope."
+  ],
+  "b1_recording": [
+    "Jedes Teleskop zeichnet das Radiosignal selbst auf. Eine Maschine misst es vier Milliarden Mal pro Sekunde, auf mehreren Kanälen gleichzeitig.",
+    "Um Platz zu sparen, bleiben pro Messung nur zwei Bits. Also einer von vier Werten. Das wirkt grob, aber das Signal steckt ohnehin im Rauschen. Es zeigt sich erst, wenn Milliarden Messungen verglichen werden.",
+    "Trotzdem füllt jedes Teleskop täglich etwa dreihundertfünfzig Terabyte. So viel, wie auf dreihundertfünfzig Laptops passt.",
+    "Und gewöhnliche Festplatten reichen nicht. Ihr Lesekopf schwebt auf einem dünnen Luftpolster. Hoch auf dem Berg ist die Luft dafür zu dünn. Bei einem Test fielen achtundzwanzig von zweiunddreißig Platten aus. Deshalb nutzen die Teleskope versiegelte Festplatten, gefüllt mit Helium."
+  ],
+  "b2_clocks": [
+    "Später müssen die Aufnahmen verschiedener Teleskope exakt zusammenpassen, Schwingung für Schwingung. Bei eins Komma drei Millimetern dauert eine Schwingung nur vier Billionstel Sekunden.",
+    "Deshalb hat jedes Teleskop eine Atomuhr, einen Wasserstoffmaser. Sie ist so genau, dass sie erst nach Millionen Jahren um eine Sekunde abweichen würde. In zehn Sekunden driftet sie um weniger als ein Zwanzigstel einer Schwingung.",
+    "Mit ungenaueren Uhren würden die Wellen auseinanderlaufen. Statt sich zu verstärken, würden sie sich gegenseitig verwischen."
+  ],
+  "b3_correlator": [
+    "Fürs Internet sind die Daten viel zu groß. Die Übertragung würde ungefähr ein Jahr dauern. Deshalb fliegen die Festplatten zu zwei Supercomputern, in Deutschland und den USA.",
+    "Dort werden für jedes Teleskoppaar die Aufnahmen ausgerichtet und verglichen. Das Licht des schwarzen Lochs ist ihr gemeinsamer Anteil. Das übrige Rauschen mittelt sich heraus."
+  ],
+  "b4_one_note": [
+    "Was liefert der Vergleich zweier Aufnahmen? Noch kein Bild. Jedes Teleskoppaar misst nur, wie stark ein bestimmtes Streifenmuster im Bild steckt.",
+    "Nahe Teleskope messen breite Streifen, also die grobe Form. Weit entfernte Teleskope messen feine Streifen, also kleine Details.",
+    "Stellt euch das Bild als Musikstück vor. Jedes Paar von Teleskopen hört davon nur einen einzigen Ton."
+  ],
+  "b5_earth_turns": [
+    "Mit wenigen Standorten bekommen wir nur wenige Töne. Aber die Erde dreht sich. Dadurch sieht jedes Teleskoppaar das schwarze Loch aus einem etwas anderen Winkel und hört einen etwas anderen Ton.",
+    "Über eine Nacht zeichnen die Töne diese Kurven. Doch der größte Teil der Musik fehlt noch."
+  ],
+  "b6_guess_the_song": [
+    "Zu diesen wenigen Tönen passen viele verschiedene Bilder. Es ist, als sollte man ein Lied aus einer Handvoll Tönen erraten.",
+    "Das Bild wird also nicht direkt gemessen. Ein Computer muss es erschließen: als das Bild, das die gemessenen Töne am besten erklärt."
+  ],
+  "b7_cleaning": [
+    "Zuerst müssen die Messungen bereinigt werden. Über jedem Teleskop schwankt die Luft und verzögert die Wellen. Alle paar Sekunden etwas anders. Dadurch verschieben sich die Streifenmuster jedes Paares.",
+    "Hier hilft ein Trick. Drei Teleskope bilden ein Dreieck. Addiert man die Verschiebungen entlang seiner Seiten, hebt sich der Einfluss jedes Teleskops auf. Übrig bleibt, was zum schwarzen Loch gehört.",
+    "Nach der Bereinigung werden aus Petabytes an Aufnahmen weniger als ein Gigabyte. Das passt auf einen USB-Stick."
+  ],
+  "b8_imaging": [
+    "Dann entsteht das Bild. Damit sich niemand selbst täuscht, arbeiteten vier Teams getrennt und geheim, jedes mit eigener Methode. Nach sieben Wochen verglichen sie ihre Ergebnisse. Alle vier hatten einen Ring gefunden.",
+    "Um das schwarze Loch zu wiegen, verglich man den Ring mit Zehntausenden Computersimulationen. Das Ergebnis: sechseinhalb Milliarden Sonnenmassen."
+  ],
+  "c0_many_pictures": [
+    "Ältere Methoden lieferten ein einzelnes Bild. Die Forscher stritten darüber, welche Teile davon wirklich stimmen.",
+    "Besser ist es, alle Bilder zu finden, die zu den Daten passen, und ihre Wahrscheinlichkeit. Wo sie übereinstimmen, können wir dem Bild vertrauen. Wo sie sich unterscheiden, erkennen wir unsere Unsicherheit."
+  ],
+  "c1_julia": [
+    "Dafür müssen Millionen Bilder ausprobiert werden. Früher dauerte das etwa eine Woche auf tausend Prozessoren.",
+    "Mit dem Julia-Paket Comrade dauert eine solche Analyse ungefähr eine halbe Stunde auf einem Prozessor. Dabei hat das Modell vierzigmal mehr Details."
+  ],
+  "c2_space": [
+    "Für schärfere Bilder brauchen wir ein noch größeres Teleskop, größer als die Erde. Der Black Hole Explorer soll eine Radioantenne ins All bringen.",
+    "Seine Töne reichen viel höher. Fein genug, um den dünnen Photonenring selbst zu erkennen. Auch diese Daten werden mit Julia zu Bildern."
+  ],
+  "c3_outro": [
+    "Das Bild eines schwarzen Lochs wird nicht einfach aufgenommen. Es wird berechnet: aus wenigen Tönen, die Teleskope auf der ganzen Erde hören.",
+    "Bessere Software ermöglicht bessere Wissenschaft und schärfere Bilder vom Rand des Universums."
+  ]
+}
